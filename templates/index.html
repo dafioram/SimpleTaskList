@@ -15,12 +15,16 @@
         /* --- Add Bar Container --- */
         .add-container {
             background: #1e1e1e; 
-            padding: 15px; /* Increased padding */
+            padding: 15px; 
             border-radius: 12px;
             margin-bottom: 25px; 
+        }
+
+        /* FIX: Apply Flex Layout to the FORM itself to force spacing */
+        .add-container form {
             display: flex; 
             flex-direction: column; 
-            gap: 15px; /* Increased gap to stop overlapping */
+            gap: 15px; /* This pushes the colors down away from the input */
         }
 
         .add-form { display: flex; gap: 10px; width: 100%; }
@@ -30,23 +34,20 @@
             font-size: 16px; background: #2c2c2c; color: white; outline: none;
         }
 
-        /* FIXED: Purple Button is Back */
         button.add-btn {
             background-color: #bb86fc; /* Purple */
-            color: #000; /* Black Text */
+            color: #000; 
             border: none; padding: 0 20px;
             border-radius: 8px; font-weight: bold; font-size: 24px; cursor: pointer;
         }
-        button.add-btn:hover {
-            background-color: #a370db; /* Slightly darker purple on hover */
-        }
+        button.add-btn:hover { background-color: #a370db; }
         
         /* Color Radio Buttons */
         .color-selector { 
             display: flex; 
             gap: 15px; 
             padding-left: 5px; 
-            align-items: center; /* Ensures dots align nicely */
+            align-items: center;
         }
         
         .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }

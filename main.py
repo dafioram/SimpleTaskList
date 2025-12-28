@@ -21,7 +21,7 @@ db = SQLAlchemy(app)
 # --- MODEL ---
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
     position = db.Column(db.Integer, default=0)
     # New Field: Color (default, red, orange, blue)
     color = db.Column(db.String(20), default='default')
