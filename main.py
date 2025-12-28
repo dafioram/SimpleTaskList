@@ -23,39 +23,34 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     position = db.Column(db.Integer, default=0)
-    
-    # Color now represents the GROUP (Purple, Blue, Green, etc.)
     color = db.Column(db.String(20), default='default')
-    
     label = db.Column(db.String(50), nullable=True) 
-    due_date = db.Column(db.String(20), nullable=True) # YYYY-MM-DD
+    due_date = db.Column(db.String(20), nullable=True)
     
+    # NEW FIELD: Completion Note
+    completion_note = db.Column(db.Text, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
     completed_at = db.Column(db.DateTime, nullable=True) 
 
-    # --- HELPER: Calculate Days Left ---
     def get_time_display(self):
-        if not self.due_date:
-            return None
-        
+        if not self.due_date: return None
         try:
-            # Parse the stored string back into a date object
             due = datetime.datetime.strptime(self.due_date, '%Y-%m-%d').date()
             today = datetime.date.today()
             delta = (due - today).days
-            
             if delta == 0: return "Due today"
             if delta == 1: return "1 day left"
             if delta > 1:  return f"{delta} days left"
             if delta == -1: return "1 day overdue"
             return f"{abs(delta)} days overdue"
-        except:
-            return None
+        except: return None
 
 with app.app_context():
     db.session.execute(text("PRAGMA journal_mode=WAL"))
     db.create_all()
-    # Migration block (Safe to keep)
+    
+    # --- AUTO-MIGRATION ---
     with db.engine.connect() as conn:
         try: conn.execute(text("ALTER TABLE task ADD COLUMN color VARCHAR(20) DEFAULT 'default'"))
         except: pass
@@ -63,26 +58,17 @@ with app.app_context():
         except: pass
         try: conn.execute(text("ALTER TABLE task ADD COLUMN due_date VARCHAR(20)"))
         except: pass
+        # Migrate new column
+        try: conn.execute(text("ALTER TABLE task ADD COLUMN completion_note TEXT"))
+        except: pass
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
     tasks = Task.query.all()
-    
-    # Sort Active by Position
-    active_tasks = sorted(
-        [t for t in tasks if t.completed_at is None], 
-        key=lambda t: t.position
-    )
-
-    # Sort Finished by Completed Date
-    finished_tasks = sorted(
-        [t for t in tasks if t.completed_at is not None],
-        key=lambda t: t.completed_at,
-        reverse=True
-    )
-
+    active_tasks = sorted([t for t in tasks if t.completed_at is None], key=lambda t: t.position)
+    finished_tasks = sorted([t for t in tasks if t.completed_at is not None], key=lambda t: t.completed_at, reverse=True)
     return render_template('index.html', tasks=active_tasks + finished_tasks)
 
 @app.route('/sw.js')
@@ -99,12 +85,7 @@ def add_task():
     if content:
         max_pos = db.session.query(db.func.max(Task.position)).scalar()
         new_pos = (max_pos + 1) if max_pos is not None else 0
-        
-        new_task = Task(
-            content=content, position=new_pos, color=color,
-            label=label if label else None,
-            due_date=due_date if due_date else None
-        )
+        new_task = Task(content=content, position=new_pos, color=color, label=label if label else None, due_date=due_date if due_date else None)
         db.session.add(new_task)
         db.session.commit()
     return redirect(url_for('index'))
@@ -123,6 +104,11 @@ def edit_task(id):
         task.label = lbl if lbl else None
         task.due_date = dd if dd else None
         
+        # Save completion note ONLY if task is completed
+        if task.completed_at:
+            note = request.form.get('completion_note')
+            task.completion_note = note if note else None
+
         db.session.commit()
         return redirect(url_for('index'))
 
@@ -133,10 +119,13 @@ def toggle_task(id):
     task = db.session.get(Task, id)
     if task:
         if task.completed_at:
+            # UN-CHECKING: Wipe the note and date
             task.completed_at = None
+            task.completion_note = None  # <--- DISAPPEARING LOGIC
             max_pos = db.session.query(db.func.max(Task.position)).scalar() or 0
             task.position = max_pos + 1
         else:
+            # CHECKING
             task.completed_at = datetime.datetime.now()
         db.session.commit()
     return redirect(url_for('index'))

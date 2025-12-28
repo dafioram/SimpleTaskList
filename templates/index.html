@@ -12,59 +12,34 @@
             margin: 0; padding: 15px; max-width: 600px; margin: 0 auto;
         }
 
-        /* --- Input Area --- */
-        .add-container {
-            background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 25px;
-        }
+        /* Input Area */
+        .add-container { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
         .add-container form { display: flex; flex-direction: column; gap: 15px; }
-
         .add-form-main { display: flex; gap: 10px; width: 100%; }
         .add-form-details { display: flex; gap: 10px; align-items: center; }
 
-        input[type="text"] {
-            flex-grow: 1; padding: 12px; border-radius: 8px; border: none; 
-            font-size: 16px; background: #2c2c2c; color: white; outline: none;
-        }
-
-        input.small-input {
-            background: #2c2c2c; color: #aaa; border: none; padding: 8px;
-            border-radius: 6px; font-size: 14px; outline: none;
-        }
+        input[type="text"] { flex-grow: 1; padding: 12px; border-radius: 8px; border: none; font-size: 16px; background: #2c2c2c; color: white; outline: none; }
+        input.small-input { background: #2c2c2c; color: #aaa; border: none; padding: 8px; border-radius: 6px; font-size: 14px; outline: none; }
         input[type="date"] { font-family: inherit; }
 
-        button.add-btn {
-            background-color: #bb86fc; color: #000; border: none; padding: 0 20px;
-            border-radius: 8px; font-weight: bold; font-size: 24px; cursor: pointer;
-        }
+        button.add-btn { background-color: #bb86fc; color: #000; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; font-size: 24px; cursor: pointer; }
         button.add-btn:hover { background-color: #a370db; }
         
-        /* --- Color Selector (Groups) --- */
+        /* Color Selector */
         .color-selector { display: flex; gap: 12px; padding-left: 5px; align-items: center; }
         .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }
         .color-option input { display: none; } 
-        .dot {
-            width: 20px; height: 20px; border-radius: 50%; display: block;
-            border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
-        }
-        
-        /* New Group Palette */
+        .dot { width: 20px; height: 20px; border-radius: 50%; display: block; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; }
         .dot.default { background-color: #555; }
         .dot.purple { background-color: #d0bcff; }
         .dot.blue { background-color: #448aff; }
         .dot.green { background-color: #69f0ae; }
         .dot.orange { background-color: #ffab40; }
         .dot.red { background-color: #ff5252; }
-        
         .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
-        /* --- Task Card --- */
-        .task-card {
-            background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
-            border-radius: 8px; display: flex; align-items: center; gap: 12px;
-            border-left: 6px solid #333; /* Default */
-        }
-
-        /* Group Borders */
+        /* Task Card */
+        .task-card { background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 12px; border-left: 6px solid #333; }
         .task-card.border-purple { border-left-color: #d0bcff; }
         .task-card.border-blue { border-left-color: #448aff; }
         .task-card.border-green { border-left-color: #69f0ae; }
@@ -72,53 +47,41 @@
         .task-card.border-red { border-left-color: #ff5252; }
 
         .task-content { flex-grow: 1; display: flex; flex-direction: column; }
-        .task-text { 
-            font-size: 1.1rem; color: #fff; 
-            word-break: break-word; line-height: 1.4;
-        }
+        .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; }
         
-        /* --- Meta Data --- */
-        .task-meta {
-            display: flex; align-items: center; gap: 10px; margin-top: 6px;
-            font-size: 0.75rem; color: #666;
+        /* Completion Note Style */
+        .completion-note {
+            margin-top: 6px;
+            font-size: 0.95rem;
+            color: #d0bcff; /* Light Purple */
+            font-style: italic;
+            border-left: 2px solid #555;
+            padding-left: 8px;
         }
 
-        /* DYNAMIC COLORED LABELS */
-        .label-chip {
-            padding: 2px 8px; border-radius: 6px;
-            font-size: 0.7rem; font-weight: bold;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            background-color: #333; color: #ccc; /* Fallback */
-        }
-
-        /* Chip Color Variants */
+        .task-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 0.75rem; color: #666; }
+        .label-chip { padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; background-color: #333; color: #ccc; }
         .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
         .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
         .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
         .chip-orange { background-color: rgba(255, 171, 64, 0.15); color: #ffab40; }
         .chip-red    { background-color: rgba(255, 82, 82, 0.15); color: #ff5252; }
 
-        /* --- Controls --- */
         .order-controls { display: flex; flex-direction: column; gap: 4px; }
         .arrow-btn { text-decoration: none; color: #555; font-size: 14px; line-height: 1; padding: 2px 6px; }
         .arrow-btn:hover { color: #fff; }
 
-        .toggle-btn {
-            width: 24px; height: 24px; border-radius: 50%; border: 2px solid #777;
-            background: transparent; display: flex; align-items: center; justify-content: center;
-            text-decoration: none; color: transparent; flex-shrink: 0;
-        }
+        .toggle-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #777; background: transparent; display: flex; align-items: center; justify-content: center; text-decoration: none; color: transparent; flex-shrink: 0; }
         .toggle-btn:hover { border-color: #fff; }
         .icon-btn { text-decoration: none; color: #444; font-size: 1.2rem; padding: 0 5px; }
         .icon-btn:hover { color: #fff; }
         .delete-btn:hover { color: #ff5252; }
 
-        /* Completed State */
         .task-card.completed { opacity: 0.5; background-color: #181818; border-left-color: #222; }
         .task-card.completed .task-text { text-decoration: line-through; color: #888; }
         .task-card.completed .toggle-btn { background-color: #555; border-color: #555; color: #000; }
         .task-card.completed .order-controls { visibility: hidden; }
-        .task-card.completed .label-chip { background-color: #222; color: #555; } /* Grey out label when done */
+        .task-card.completed .label-chip { background-color: #222; color: #555; }
     </style>
 </head>
 <body>
@@ -140,7 +103,7 @@
                     <label class="color-option"><input type="radio" name="color" value="red"><span class="dot red"></span></label>
                 </div>
                 
-                <input type="text" name="label" class="small-input" placeholder="Label (e.g. Work)" style="width: 100px;">
+                <input type="text" name="label" class="small-input" placeholder="Label" style="width: 100px;">
                 <input type="date" name="due_date" class="small-input">
             </div>
         </form>
@@ -161,6 +124,10 @@
 
             <div class="task-content">
                 <span class="task-text">{{ task.content }}</span>
+
+                {% if task.completion_note %}
+                    <div class="completion-note">“{{ task.completion_note }}”</div>
+                {% endif %}
                 
                 <div class="task-meta">
                     {% if task.label %}

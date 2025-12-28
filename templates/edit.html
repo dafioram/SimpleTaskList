@@ -15,39 +15,58 @@
             background: #1e1e1e; padding: 30px; border-radius: 12px;
             width: 100%; max-width: 400px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 20px;
         }
-        h2 { margin-top: 0; color: #bb86fc; }
+        h2 { margin-top: 0; margin-bottom: 0; color: #bb86fc; }
         
+        /* --- Main Task Input --- */
         input[type="text"] {
             width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333;
             font-size: 16px; background: #2c2c2c; color: white; outline: none;
-            margin-bottom: 20px; box-sizing: border-box;
+            box-sizing: border-box;
+            /* FIX: Restored spacing below the main input */
+            margin-bottom: 20px; 
         }
         
-        .meta-inputs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .meta-inputs input { margin-bottom: 0; } 
+        /* --- Row for Label & Date --- */
+        .meta-inputs { display: flex; gap: 10px; }
+        
+        /* Specific Styles for Label & Date inputs */
         input.small-input {
             background: #2c2c2c; color: #aaa; border: 1px solid #333; padding: 10px;
             border-radius: 6px; font-size: 14px; outline: none; width: 50%;
+            /* FIX: Ensure these don't have the large bottom margin */
+            margin-bottom: 0; 
         }
 
-        .color-selector { display: flex; gap: 15px; margin-bottom: 25px; justify-content: center; }
+        /* --- Color Dots --- */
+        .color-selector { 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center;
+            /* Space above colors is handled by the flex gap of .edit-card now, but we can add extra if needed */
+            margin-top: 10px;
+        }
         .color-option { cursor: pointer; position: relative; }
         .color-option input { display: none; }
-        .dot {
-            width: 30px; height: 30px; border-radius: 50%; display: block;
-            border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
-        }
+        .dot { width: 30px; height: 30px; border-radius: 50%; display: block; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; }
         .dot.default { background-color: #555; }
         .dot.purple { background-color: #d0bcff; }
         .dot.blue { background-color: #448aff; }
         .dot.green { background-color: #69f0ae; }
         .dot.orange { background-color: #ffab40; }
         .dot.red { background-color: #ff5252; }
-        
         .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
-        .btn-group { display: flex; gap: 10px; }
+        /* Completion Note Area */
+        .note-area {
+            width: 100%; padding: 15px; border-radius: 8px; 
+            border: 1px solid #bb86fc; 
+            font-size: 14px; background: #222; color: #d0bcff; outline: none;
+            box-sizing: border-box; font-family: inherit; resize: vertical;
+        }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .btn {
             flex: 1; padding: 12px; border: none; border-radius: 8px;
             font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none;
@@ -76,6 +95,13 @@
                 <label class="color-option"><input type="radio" name="color" value="orange" {{ 'checked' if task.color == 'orange' }}><span class="dot orange"></span></label>
                 <label class="color-option"><input type="radio" name="color" value="red" {{ 'checked' if task.color == 'red' }}><span class="dot red"></span></label>
             </div>
+
+            {% if task.completed_at %}
+            <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">
+                <label style="display:block; margin-bottom:8px; color:#666; font-size:0.9rem;">Completion Note (Optional):</label>
+                <textarea name="completion_note" class="note-area" rows="3" placeholder="Add details about how this was resolved...">{{ task.completion_note or '' }}</textarea>
+            </div>
+            {% endif %}
 
             <div class="btn-group">
                 <a href="/" class="btn cancel-btn">Cancel</a>
