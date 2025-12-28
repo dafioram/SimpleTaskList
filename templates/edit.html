@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Task</title>
+    <style>
+        body {
+            background-color: #121212; color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
+        .edit-card {
+            background: #1e1e1e; padding: 30px; border-radius: 12px;
+            width: 100%; max-width: 400px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        h2 { margin-top: 0; color: #bb86fc; }
+        
+        input[type="text"] {
+            width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333;
+            font-size: 16px; background: #2c2c2c; color: white; outline: none;
+            margin-bottom: 20px; box-sizing: border-box;
+        }
+
+        .color-selector { display: flex; gap: 15px; margin-bottom: 25px; justify-content: center; }
+        .color-option { cursor: pointer; position: relative; }
+        .color-option input { display: none; }
+        .dot {
+            width: 30px; height: 30px; border-radius: 50%; display: block;
+            border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
+        }
+        .dot.default { background-color: #555; }
+        .dot.red { background-color: #ff5252; }
+        .dot.orange { background-color: #ffab40; }
+        .dot.blue { background-color: #448aff; }
+
+        .color-option input:checked + .dot {
+            opacity: 1; transform: scale(1.2); border-color: #fff;
+        }
+
+        .btn-group { display: flex; gap: 10px; }
+        .btn {
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none;
+        }
+        .save-btn { background-color: #bb86fc; color: #000; }
+        .cancel-btn { background-color: #333; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="edit-card">
+        <h2>Edit Task</h2>
+        <form method="POST">
+            <input type="text" name="content" value="{{ task.content }}" required autocomplete="off">
+            
+            <div class="color-selector">
+                <label class="color-option">
+                    <input type="radio" name="color" value="default" {{ 'checked' if task.color == 'default' }}>
+                    <span class="dot default"></span>
+                </label>
+                <label class="color-option">
+                    <input type="radio" name="color" value="red" {{ 'checked' if task.color == 'red' }}>
+                    <span class="dot red"></span>
+                </label>
+                <label class="color-option">
+                    <input type="radio" name="color" value="orange" {{ 'checked' if task.color == 'orange' }}>
+                    <span class="dot orange"></span>
+                </label>
+                <label class="color-option">
+                    <input type="radio" name="color" value="blue" {{ 'checked' if task.color == 'blue' }}>
+                    <span class="dot blue"></span>
+                </label>
+            </div>
+
+            <div class="btn-group">
+                <a href="/" class="btn cancel-btn">Cancel</a>
+                <button type="submit" class="btn save-btn">Save</button>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>
