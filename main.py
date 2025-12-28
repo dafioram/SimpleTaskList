@@ -23,38 +23,60 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     position = db.Column(db.Integer, default=0)
-    # New Field: Color (default, red, orange, blue)
+    
+    # Color now represents the GROUP (Purple, Blue, Green, etc.)
     color = db.Column(db.String(20), default='default')
+    
+    label = db.Column(db.String(50), nullable=True) 
+    due_date = db.Column(db.String(20), nullable=True) # YYYY-MM-DD
+    
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
     completed_at = db.Column(db.DateTime, nullable=True) 
+
+    # --- HELPER: Calculate Days Left ---
+    def get_time_display(self):
+        if not self.due_date:
+            return None
+        
+        try:
+            # Parse the stored string back into a date object
+            due = datetime.datetime.strptime(self.due_date, '%Y-%m-%d').date()
+            today = datetime.date.today()
+            delta = (due - today).days
+            
+            if delta == 0: return "Due today"
+            if delta == 1: return "1 day left"
+            if delta > 1:  return f"{delta} days left"
+            if delta == -1: return "1 day overdue"
+            return f"{abs(delta)} days overdue"
+        except:
+            return None
 
 with app.app_context():
     db.session.execute(text("PRAGMA journal_mode=WAL"))
     db.create_all()
-    
-    # --- AUTO-MIGRATION FOR EXISTING DB ---
-    # This tries to add the 'color' column if it's missing from your old DB
-    try:
-        with db.engine.connect() as conn:
-            conn.execute(text("ALTER TABLE task ADD COLUMN color VARCHAR(20) DEFAULT 'default'"))
-            print("✅ Migration: Added 'color' column to database.")
-    except Exception:
-        # Fails silently if column already exists (which is good)
-        pass
+    # Migration block (Safe to keep)
+    with db.engine.connect() as conn:
+        try: conn.execute(text("ALTER TABLE task ADD COLUMN color VARCHAR(20) DEFAULT 'default'"))
+        except: pass
+        try: conn.execute(text("ALTER TABLE task ADD COLUMN label VARCHAR(50)"))
+        except: pass
+        try: conn.execute(text("ALTER TABLE task ADD COLUMN due_date VARCHAR(20)"))
+        except: pass
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
     tasks = Task.query.all()
-
-    # Active: Sorted by Position (Manual Order)
+    
+    # Sort Active by Position
     active_tasks = sorted(
         [t for t in tasks if t.completed_at is None], 
         key=lambda t: t.position
     )
 
-    # Finished: Sorted by Completion Date (Newest first)
+    # Sort Finished by Completed Date
     finished_tasks = sorted(
         [t for t in tasks if t.completed_at is not None],
         key=lambda t: t.completed_at,
@@ -70,27 +92,37 @@ def service_worker():
 @app.route('/add', methods=['POST'])
 def add_task():
     content = request.form.get('content')
-    color = request.form.get('color', 'default') # Get color from form
-    
+    color = request.form.get('color', 'default')
+    label = request.form.get('label')
+    due_date = request.form.get('due_date')
+
     if content:
         max_pos = db.session.query(db.func.max(Task.position)).scalar()
         new_pos = (max_pos + 1) if max_pos is not None else 0
         
-        new_task = Task(content=content, position=new_pos, color=color)
+        new_task = Task(
+            content=content, position=new_pos, color=color,
+            label=label if label else None,
+            due_date=due_date if due_date else None
+        )
         db.session.add(new_task)
         db.session.commit()
     return redirect(url_for('index'))
 
-# --- NEW EDIT ROUTE ---
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit_task(id):
     task = db.session.get(Task, id)
-    if not task:
-        return redirect(url_for('index'))
+    if not task: return redirect(url_for('index'))
 
     if request.method == 'POST':
         task.content = request.form.get('content')
         task.color = request.form.get('color')
+        
+        lbl = request.form.get('label')
+        dd = request.form.get('due_date')
+        task.label = lbl if lbl else None
+        task.due_date = dd if dd else None
+        
         db.session.commit()
         return redirect(url_for('index'))
 
@@ -113,15 +145,12 @@ def toggle_task(id):
 def move_task(id, direction):
     current = db.session.get(Task, id)
     if not current or current.completed_at: return redirect(url_for('index'))
-    
     query = Task.query.filter(Task.completed_at.is_(None))
 
     if direction == 'up':
-        neighbor = query.filter(Task.position < current.position)\
-                        .order_by(Task.position.desc()).first()
+        neighbor = query.filter(Task.position < current.position).order_by(Task.position.desc()).first()
     else: 
-        neighbor = query.filter(Task.position > current.position)\
-                        .order_by(Task.position.asc()).first()
+        neighbor = query.filter(Task.position > current.position).order_by(Task.position.asc()).first()
 
     if neighbor:
         current.position, neighbor.position = neighbor.position, current.position
@@ -136,24 +165,16 @@ def delete_task(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-# --- SWEEP FUNCTION ---
 @app.route('/sweep')
 def sweep_completed():
-    # Deletes all completed tasks
     db.session.query(Task).filter(Task.completed_at.isnot(None)).delete()
     db.session.commit()
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    # Auto-Backup
     if os.path.exists(db_path):
         with app.app_context():
             try: db.session.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
             except: pass
-        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_dir = os.path.join(os.path.dirname(db_path), 'backups')
-        os.makedirs(backup_dir, exist_ok=True)
-        shutil.copy(db_path, os.path.join(backup_dir, f"tasks_backup_{ts}.db"))
-
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)

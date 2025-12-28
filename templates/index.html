@@ -5,82 +5,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Task List</title>
-	<style>
+    <style>
         body {
             background-color: #121212; color: #e0e0e0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0; padding: 15px; max-width: 600px; margin: 0 auto;
         }
 
-        /* --- Add Bar Container --- */
+        /* --- Input Area --- */
         .add-container {
-            background: #1e1e1e; 
-            padding: 15px; 
-            border-radius: 12px;
-            margin-bottom: 25px; 
+            background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 25px;
         }
+        .add-container form { display: flex; flex-direction: column; gap: 15px; }
 
-        /* FIX: Apply Flex Layout to the FORM itself to force spacing */
-        .add-container form {
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; /* This pushes the colors down away from the input */
-        }
+        .add-form-main { display: flex; gap: 10px; width: 100%; }
+        .add-form-details { display: flex; gap: 10px; align-items: center; }
 
-        .add-form { display: flex; gap: 10px; width: 100%; }
-        
         input[type="text"] {
             flex-grow: 1; padding: 12px; border-radius: 8px; border: none; 
             font-size: 16px; background: #2c2c2c; color: white; outline: none;
         }
 
+        input.small-input {
+            background: #2c2c2c; color: #aaa; border: none; padding: 8px;
+            border-radius: 6px; font-size: 14px; outline: none;
+        }
+        input[type="date"] { font-family: inherit; }
+
         button.add-btn {
-            background-color: #bb86fc; /* Purple */
-            color: #000; 
-            border: none; padding: 0 20px;
+            background-color: #bb86fc; color: #000; border: none; padding: 0 20px;
             border-radius: 8px; font-weight: bold; font-size: 24px; cursor: pointer;
         }
         button.add-btn:hover { background-color: #a370db; }
         
-        /* Color Radio Buttons */
-        .color-selector { 
-            display: flex; 
-            gap: 15px; 
-            padding-left: 5px; 
-            align-items: center;
-        }
-        
+        /* --- Color Selector (Groups) --- */
+        .color-selector { display: flex; gap: 12px; padding-left: 5px; align-items: center; }
         .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }
         .color-option input { display: none; } 
-
         .dot {
             width: 20px; height: 20px; border-radius: 50%; display: block;
-            border: 2px solid transparent; opacity: 0.6; transition: all 0.2s;
+            border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
         }
-        /* Color Definitions */
+        
+        /* New Group Palette */
         .dot.default { background-color: #555; }
-        .dot.red { background-color: #ff5252; }
-        .dot.orange { background-color: #ffab40; }
+        .dot.purple { background-color: #d0bcff; }
         .dot.blue { background-color: #448aff; }
-
-        /* Selected State */
-        .color-option input:checked + .dot {
-            opacity: 1; transform: scale(1.2); border-color: #fff;
-        }
+        .dot.green { background-color: #69f0ae; }
+        .dot.orange { background-color: #ffab40; }
+        .dot.red { background-color: #ff5252; }
+        
+        .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
         /* --- Task Card --- */
         .task-card {
             background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
             border-radius: 8px; display: flex; align-items: center; gap: 12px;
-            border-left: 6px solid #333; 
+            border-left: 6px solid #333; /* Default */
         }
 
-        /* Priority Borders */
-        .task-card.border-red { border-left-color: #ff5252; }
-        .task-card.border-orange { border-left-color: #ffab40; }
+        /* Group Borders */
+        .task-card.border-purple { border-left-color: #d0bcff; }
         .task-card.border-blue { border-left-color: #448aff; }
+        .task-card.border-green { border-left-color: #69f0ae; }
+        .task-card.border-orange { border-left-color: #ffab40; }
+        .task-card.border-red { border-left-color: #ff5252; }
 
-        /* Controls */
+        .task-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .task-text { 
+            font-size: 1.1rem; color: #fff; 
+            word-break: break-word; line-height: 1.4;
+        }
+        
+        /* --- Meta Data --- */
+        .task-meta {
+            display: flex; align-items: center; gap: 10px; margin-top: 6px;
+            font-size: 0.75rem; color: #666;
+        }
+
+        /* DYNAMIC COLORED LABELS */
+        .label-chip {
+            padding: 2px 8px; border-radius: 6px;
+            font-size: 0.7rem; font-weight: bold;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            background-color: #333; color: #ccc; /* Fallback */
+        }
+
+        /* Chip Color Variants */
+        .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
+        .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
+        .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
+        .chip-orange { background-color: rgba(255, 171, 64, 0.15); color: #ffab40; }
+        .chip-red    { background-color: rgba(255, 82, 82, 0.15); color: #ff5252; }
+
+        /* --- Controls --- */
         .order-controls { display: flex; flex-direction: column; gap: 4px; }
         .arrow-btn { text-decoration: none; color: #555; font-size: 14px; line-height: 1; padding: 2px 6px; }
         .arrow-btn:hover { color: #fff; }
@@ -91,11 +109,6 @@
             text-decoration: none; color: transparent; flex-shrink: 0;
         }
         .toggle-btn:hover { border-color: #fff; }
-
-        .task-content { flex-grow: 1; display: flex; flex-direction: column; }
-        .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; }
-        .task-date { font-size: 0.75rem; color: #666; margin-top: 4px; }
-
         .icon-btn { text-decoration: none; color: #444; font-size: 1.2rem; padding: 0 5px; }
         .icon-btn:hover { color: #fff; }
         .delete-btn:hover { color: #ff5252; }
@@ -105,21 +118,30 @@
         .task-card.completed .task-text { text-decoration: line-through; color: #888; }
         .task-card.completed .toggle-btn { background-color: #555; border-color: #555; color: #000; }
         .task-card.completed .order-controls { visibility: hidden; }
+        .task-card.completed .label-chip { background-color: #222; color: #555; } /* Grey out label when done */
     </style>
 </head>
 <body>
 
     <div class="add-container">
         <form action="/add" method="POST">
-            <div class="add-form">
+            <div class="add-form-main">
                 <input type="text" name="content" placeholder="Add a task..." required autocomplete="off">
                 <button type="submit" class="add-btn">+</button>
             </div>
-            <div class="color-selector">
-                <label class="color-option"><input type="radio" name="color" value="default" checked><span class="dot default"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="red"><span class="dot red"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="orange"><span class="dot orange"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="blue"><span class="dot blue"></span></label>
+            
+            <div class="add-form-details">
+                <div class="color-selector">
+                    <label class="color-option"><input type="radio" name="color" value="default" checked><span class="dot default"></span></label>
+                    <label class="color-option"><input type="radio" name="color" value="purple"><span class="dot purple"></span></label>
+                    <label class="color-option"><input type="radio" name="color" value="blue"><span class="dot blue"></span></label>
+                    <label class="color-option"><input type="radio" name="color" value="green"><span class="dot green"></span></label>
+                    <label class="color-option"><input type="radio" name="color" value="orange"><span class="dot orange"></span></label>
+                    <label class="color-option"><input type="radio" name="color" value="red"><span class="dot red"></span></label>
+                </div>
+                
+                <input type="text" name="label" class="small-input" placeholder="Label (e.g. Work)" style="width: 100px;">
+                <input type="date" name="due_date" class="small-input">
             </div>
         </form>
     </div>
@@ -139,17 +161,25 @@
 
             <div class="task-content">
                 <span class="task-text">{{ task.content }}</span>
-                <span class="task-date">
-                    {% if task.completed_at %}Done: {{ task.completed_at.strftime('%b %d') }}
-                    {% else %}Added: {{ task.created_at.strftime('%b %d') }}
+                
+                <div class="task-meta">
+                    {% if task.label %}
+                        <span class="label-chip chip-{{ task.color }}">{{ task.label }}</span>
                     {% endif %}
-                </span>
+
+                    {% if task.completed_at %}
+                        <span>Done: {{ task.completed_at.strftime('%b %d') }}</span>
+                    {% else %}
+                        {% set days_msg = task.get_time_display() %}
+                        {% if days_msg %}
+                            <span>• {{ days_msg }}</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
             </div>
             
             <a href="/edit/{{ task.id }}" class="icon-btn">✎</a>
-
-            <a href="/delete/{{ task.id }}" class="icon-btn delete-btn" 
-               onclick="return confirm('Delete this task?');">×</a>
+            <a href="/delete/{{ task.id }}" class="icon-btn delete-btn" onclick="return confirm('Delete this task?');">×</a>
         </div>
         {% endfor %}
     </div>
@@ -160,6 +190,5 @@
            🧹 Sweep Completed
         </a>
     </div>
-
 </body>
 </html>
