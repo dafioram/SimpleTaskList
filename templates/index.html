@@ -48,7 +48,8 @@
         
         /* ROW 3: Colors */
         .color-selector { 
-            display: flex; gap: 15px; align-items: center; justify-content: center; padding-top: 5px; 
+            display: flex; gap: 10px; align-items: center; justify-content: center; 
+            padding-top: 5px; flex-wrap: wrap; /* Allows wrapping for 10 colors */
         }
         .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }
         .color-option input { display: none; } 
@@ -56,12 +57,19 @@
             width: 30px; height: 30px; border-radius: 50%; display: block;
             border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
         }
+        
+        /* Color Definitions */
         .dot.default { background-color: #555; }
         .dot.purple { background-color: #d0bcff; }
         .dot.blue { background-color: #448aff; }
         .dot.green { background-color: #69f0ae; }
         .dot.orange { background-color: #ffab40; }
         .dot.red { background-color: #ff5252; }
+        .dot.pink   { background-color: #ff80ab; }
+        .dot.teal   { background-color: #64ffda; }
+        .dot.yellow { background-color: #ffff00; }
+        .dot.indigo { background-color: #536dfe; }
+
         .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
         /* --- Task Card --- */
@@ -70,11 +78,17 @@
             border-radius: 8px; display: flex; align-items: center; gap: 12px;
             border-left: 6px solid #333; 
         }
+        
+        /* Border Colors */
         .task-card.border-purple { border-left-color: #d0bcff; }
         .task-card.border-blue { border-left-color: #448aff; }
         .task-card.border-green { border-left-color: #69f0ae; }
         .task-card.border-orange { border-left-color: #ffab40; }
         .task-card.border-red { border-left-color: #ff5252; }
+        .task-card.border-pink   { border-left-color: #ff80ab; }
+        .task-card.border-teal   { border-left-color: #64ffda; }
+        .task-card.border-yellow { border-left-color: #ffff00; }
+        .task-card.border-indigo { border-left-color: #536dfe; }
 
         .task-content { flex-grow: 1; display: flex; flex-direction: column; }
         .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; }
@@ -96,11 +110,17 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             background-color: #333; color: #ccc;
         }
+        /* Chip Colors */
         .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
         .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
         .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
         .chip-orange { background-color: rgba(255, 171, 64, 0.15); color: #ffab40; }
         .chip-red    { background-color: rgba(255, 82, 82, 0.15); color: #ff5252; }
+        .chip-pink   { background-color: rgba(255, 128, 171, 0.15); color: #ff80ab; }
+        .chip-teal   { background-color: rgba(100, 255, 218, 0.15); color: #64ffda; }
+        .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
+        .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
+
 
         /* Controls */
         .order-controls { display: flex; flex-direction: column; gap: 4px; }
@@ -138,11 +158,15 @@
             </div>
             <div class="color-selector">
                 <label class="color-option"><input type="radio" name="color" value="default" checked><span class="dot default"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="purple"><span class="dot purple"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="blue"><span class="dot blue"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="green"><span class="dot green"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="orange"><span class="dot orange"></span></label>
                 <label class="color-option"><input type="radio" name="color" value="red"><span class="dot red"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="orange"><span class="dot orange"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="yellow"><span class="dot yellow"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="green"><span class="dot green"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="teal"><span class="dot teal"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="blue"><span class="dot blue"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="indigo"><span class="dot indigo"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="purple"><span class="dot purple"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="pink"><span class="dot pink"></span></label>
             </div>
         </form>
     </div>
