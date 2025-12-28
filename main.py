@@ -66,10 +66,44 @@ with app.app_context():
 
 @app.route('/')
 def index():
-    tasks = Task.query.all()
-    active_tasks = sorted([t for t in tasks if t.completed_at is None], key=lambda t: t.position)
-    finished_tasks = sorted([t for t in tasks if t.completed_at is not None], key=lambda t: t.completed_at, reverse=True)
-    return render_template('index.html', tasks=active_tasks + finished_tasks)
+    # 1. Check for filter parameter
+    filter_label = request.args.get('label')
+    
+    # 2. Base Query
+    query = Task.query
+    
+    # 3. Apply Filter if it exists
+    if filter_label:
+        query = query.filter(Task.label == filter_label)
+        
+    tasks = query.all()
+    
+    # 4. Get Unique Labels for the top bar (SQL Distinct)
+    # We only want labels that are not NULL and not empty strings
+    unique_labels_query = db.session.query(Task.label)\
+        .filter(Task.label.isnot(None))\
+        .filter(Task.label != "")\
+        .distinct().all()
+    
+    # Flatten the result (SQLAlchemy returns tuples like [('Work',), ('Home',)])
+    all_labels = sorted([l[0] for l in unique_labels_query])
+
+    # 5. Sorting Logic (Same as before)
+    active_tasks = sorted(
+        [t for t in tasks if t.completed_at is None], 
+        key=lambda t: t.position
+    )
+
+    finished_tasks = sorted(
+        [t for t in tasks if t.completed_at is not None],
+        key=lambda t: t.completed_at,
+        reverse=True
+    )
+
+    return render_template('index.html', 
+                           tasks=active_tasks + finished_tasks, 
+                           all_labels=all_labels, 
+                           active_filter=filter_label)
 
 @app.route('/sw.js')
 def service_worker():
