@@ -18,15 +18,11 @@
         }
         
         .add-container form { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; /* Spacing between the 3 rows */
+            display: flex; flex-direction: column; gap: 15px; 
         }
 
-        /* --- Row 1: Main Input + Button --- */
-        .form-row-main { 
-            display: flex; gap: 10px; width: 100%; 
-        }
+        /* ROW 1: Main Input + Button */
+        .form-row-main { display: flex; gap: 10px; width: 100%; }
 
         input[type="text"] {
             flex-grow: 1; padding: 15px; border-radius: 8px; border: none; 
@@ -36,54 +32,44 @@
         button.add-btn {
             background-color: #bb86fc; color: #000; border: none; padding: 0 20px;
             border-radius: 8px; font-weight: bold; font-size: 24px; cursor: pointer;
-            flex-shrink: 0; /* Prevents button from getting squished */
+            flex-shrink: 0;
         }
         button.add-btn:hover { background-color: #a370db; }
 
-        /* --- Row 2: Label + Date --- */
-        .form-row-details {
-            display: flex; gap: 10px; width: 100%;
-        }
+        /* ROW 2: Label + Date */
+        .form-row-details { display: flex; gap: 10px; width: 100%; }
 
         input.small-input {
             background: #2c2c2c; color: #aaa; border: none; padding: 12px;
             border-radius: 8px; font-size: 14px; outline: none;
-            flex: 1; /* Both inputs take equal 50% width */
-            min-width: 0; /* Prevents overflow on very small screens */
+            flex: 1; min-width: 0;
         }
         input[type="date"] { font-family: inherit; }
         
-        /* --- Row 3: Colors --- */
+        /* ROW 3: Colors */
         .color-selector { 
-            display: flex; gap: 15px; align-items: center; justify-content: center;
-            padding-top: 5px; 
+            display: flex; gap: 15px; align-items: center; justify-content: center; padding-top: 5px; 
         }
-        
         .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }
         .color-option input { display: none; } 
         .dot {
             width: 30px; height: 30px; border-radius: 50%; display: block;
             border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
         }
-        
-        /* Colors */
         .dot.default { background-color: #555; }
         .dot.purple { background-color: #d0bcff; }
         .dot.blue { background-color: #448aff; }
         .dot.green { background-color: #69f0ae; }
         .dot.orange { background-color: #ffab40; }
         .dot.red { background-color: #ff5252; }
-        
         .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
-        /* --- Task Card Styles --- */
+        /* --- Task Card --- */
         .task-card {
             background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
             border-radius: 8px; display: flex; align-items: center; gap: 12px;
             border-left: 6px solid #333; 
         }
-
-        /* Group Borders */
         .task-card.border-purple { border-left-color: #d0bcff; }
         .task-card.border-blue { border-left-color: #448aff; }
         .task-card.border-green { border-left-color: #69f0ae; }
@@ -91,12 +77,8 @@
         .task-card.border-red { border-left-color: #ff5252; }
 
         .task-content { flex-grow: 1; display: flex; flex-direction: column; }
-        .task-text { 
-            font-size: 1.1rem; color: #fff; 
-            word-break: break-word; line-height: 1.4;
-        }
+        .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; }
         
-        /* Completion Note */
         .completion-note {
             margin-top: 6px; font-size: 0.95rem; color: #d0bcff;
             font-style: italic; border-left: 2px solid #555; padding-left: 8px;
@@ -104,7 +86,7 @@
 
         /* Meta Data */
         .task-meta {
-            display: flex; align-items: center; gap: 10px; margin-top: 6px;
+            display: flex; align-items: center; gap: 8px; margin-top: 6px;
             font-size: 0.75rem; color: #666; flex-wrap: wrap;
         }
 
@@ -135,7 +117,6 @@
         .icon-btn:hover { color: #fff; }
         .delete-btn:hover { color: #ff5252; }
 
-        /* Completed State */
         .task-card.completed { opacity: 0.5; background-color: #181818; border-left-color: #222; }
         .task-card.completed .task-text { text-decoration: line-through; color: #888; }
         .task-card.completed .toggle-btn { background-color: #555; border-color: #555; color: #000; }
@@ -147,17 +128,14 @@
 
     <div class="add-container">
         <form action="/add" method="POST">
-            
             <div class="form-row-main">
                 <input type="text" name="content" placeholder="Add a task..." required autocomplete="off">
                 <button type="submit" class="add-btn">+</button>
             </div>
-            
             <div class="form-row-details">
                 <input type="text" name="label" class="small-input" placeholder="Label">
                 <input type="date" name="due_date" class="small-input">
             </div>
-
             <div class="color-selector">
                 <label class="color-option"><input type="radio" name="color" value="default" checked><span class="dot default"></span></label>
                 <label class="color-option"><input type="radio" name="color" value="purple"><span class="dot purple"></span></label>
@@ -166,7 +144,6 @@
                 <label class="color-option"><input type="radio" name="color" value="orange"><span class="dot orange"></span></label>
                 <label class="color-option"><input type="radio" name="color" value="red"><span class="dot red"></span></label>
             </div>
-
         </form>
     </div>
 
@@ -194,9 +171,11 @@
                     {% if task.label %}
                         <span class="label-chip chip-{{ task.color }}">{{ task.label }}</span>
                     {% endif %}
+                    
+                    <span>Created: {{ task.created_at.strftime('%b %d') }}</span>
 
                     {% if task.completed_at %}
-                        <span>Done: {{ task.completed_at.strftime('%b %d') }}</span>
+                        <span>• Done: {{ task.completed_at.strftime('%b %d') }}</span>
                     {% else %}
                         {% set days_msg = task.get_time_display() %}
                         {% if days_msg %}
