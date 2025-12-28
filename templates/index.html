@@ -7,16 +7,15 @@
     <title>Task List</title>
     <style>
 		/* --- Filter Bar --- */
-        .filter-bar {
-            display: flex; gap: 8px; margin-bottom: 20px;
-            overflow-x: auto; /* Horizontal Scroll */
-            white-space: nowrap; padding-bottom: 5px; /* Space for scrollbar */
+		.filter-bar {
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 20px;
             
-            /* Hide Scrollbar for clean look */
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            /* FIX: Allow wrapping so PC users see everything */
+            flex-wrap: wrap; 
+            justify-content: center; /* Centers them nicely */
         }
-        .filter-bar::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
         .filter-pill {
             text-decoration: none; font-size: 0.85rem; font-weight: bold;
