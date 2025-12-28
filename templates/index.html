@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 15px;
+            max-width: 600px; margin: 0 auto; /* Center on large screens */
+        }
+
+        /* --- Input Bar --- */
+        .add-form { display: flex; gap: 10px; margin-bottom: 25px; }
+        input[type="text"] {
+            flex-grow: 1; padding: 15px; border-radius: 8px; border: none; 
+            font-size: 16px; background: #2c2c2c; color: white; outline: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button.add-btn {
+            background-color: #bb86fc; border: none; padding: 0 20px;
+            border-radius: 8px; color: #000; font-weight: bold; font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* --- Task Card --- */
+        .task-card {
+            background-color: #1e1e1e;
+            padding: 12px 15px; margin-bottom: 10px; border-radius: 8px;
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        /* --- Order Arrows (Only for Active Tasks) --- */
+        .order-controls {
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .arrow-btn {
+            text-decoration: none; color: #555; font-size: 14px; line-height: 1;
+            padding: 2px 6px; cursor: pointer;
+        }
+        .arrow-btn:hover { color: #bb86fc; }
+
+        /* --- Checkbox / Toggle --- */
+        .toggle-btn {
+            width: 24px; height: 24px; border-radius: 50%;
+            border: 2px solid #bb86fc;
+            background: transparent;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; color: transparent; flex-shrink: 0;
+        }
+        .toggle-btn:hover { background: rgba(187, 134, 252, 0.1); }
+
+        /* --- Content Area --- */
+        .task-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; }
+        .task-date { font-size: 0.75rem; color: #666; margin-top: 4px; }
+
+        /* --- Delete --- */
+        .delete-btn {
+            text-decoration: none; color: #444; font-size: 1.5rem; padding: 0 5px;
+        }
+        .delete-btn:hover { color: #ff5252; }
+
+        /* ============================ */
+        /* COMPLETED STATE         */
+        /* ============================ */
+        .task-card.completed {
+            opacity: 0.5;
+            background-color: #181818;
+            border: 1px solid #333;
+        }
+        
+        .task-card.completed .task-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .task-card.completed .toggle-btn {
+            background-color: #bb86fc; /* Filled circle */
+            color: #000; /* Checkmark color */
+        }
+        
+        /* Hide arrows for completed tasks to keep UI clean */
+        .task-card.completed .order-controls {
+            visibility: hidden; 
+        }
+
+    </style>
+</head>
+<body>
+
+    <form action="/add" method="POST" class="add-form">
+        <input type="text" name="content" placeholder="Add a note..." required autocomplete="off">
+        <button type="submit" class="add-btn">+</button>
+    </form>
+
+    <div id="task-list">
+        {% for task in tasks %}
+        <div class="task-card {{ 'completed' if task.completed_at else '' }}">
+            
+            <div class="order-controls">
+                <a href="/move/{{ task.id }}/up" class="arrow-btn">▲</a>
+                <a href="/move/{{ task.id }}/down" class="arrow-btn">▼</a>
+            </div>
+
+            <a href="/toggle/{{ task.id }}" class="toggle-btn">
+                {% if task.completed_at %}✓{% endif %}
+            </a>
+
+            <div class="task-content">
+                <span class="task-text">{{ task.content }}</span>
+                <span class="task-date">
+                    {% if task.completed_at %}
+                        Done: {{ task.completed_at.strftime('%b %d') }}
+                    {% else %}
+                        Added: {{ task.created_at.strftime('%b %d') }}
+                    {% endif %}
+                </span>
+            </div>
+            
+            <a href="/delete/{{ task.id }}" class="delete-btn">×</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register("/sw.js").catch(e => console.log('SW Fail:', e));
+        });
+      }
+    </script>
+</body>
+</html>
