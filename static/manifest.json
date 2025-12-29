@@ -1,6 +1,6 @@
 {
   "name": "My Tasks",
-  "short_name": "Taks",
+  "short_name": "Tasks",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",
