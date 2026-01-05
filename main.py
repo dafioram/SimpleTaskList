@@ -218,8 +218,9 @@ def perform_backup(src_path, backup_root):
         print(f"Backup failed: {e}")
 
 if __name__ == '__main__':
-    if os.path.exists(db_path):
-        perform_backup(db_path, data_dir)
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        if os.path.exists(db_path):
+            perform_backup(db_path, data_dir)
 
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
