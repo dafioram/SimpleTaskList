@@ -27,14 +27,13 @@ class Task(db.Model):
     
     # Metadata
     label = db.Column(db.String(50), nullable=True) 
-    due_date = db.Column(db.String(20), nullable=True) # YYYY-MM-DD
+    due_date = db.Column(db.String(20), nullable=True)
     completion_note = db.Column(db.Text, nullable=True)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
     completed_at = db.Column(db.DateTime, nullable=True) 
 
-    # Helper to calculate "3 days left"
     def get_time_display(self):
         if not self.due_date: return None
         try:
@@ -53,7 +52,7 @@ with app.app_context():
     db.session.execute(text("PRAGMA journal_mode=WAL"))
     db.create_all()
     
-    # --- AUTO-MIGRATION (Safe to keep) ---
+    # --- AUTO-MIGRATION ---
     with db.engine.connect() as conn:
         try: conn.execute(text("ALTER TABLE task ADD COLUMN color VARCHAR(20) DEFAULT 'default'"))
         except: pass
@@ -68,19 +67,13 @@ with app.app_context():
 
 @app.route('/')
 def index():
-    # 1. Check for filter parameter
     filter_label = request.args.get('label')
-    
-    # 2. Base Query
     query = Task.query
-    
-    # 3. Apply Filter if selected
     if filter_label:
         query = query.filter(Task.label == filter_label)
         
     tasks = query.all()
     
-    # 4. Get Unique Labels for the top bar
     unique_labels_query = db.session.query(Task.label)\
         .filter(Task.label.isnot(None))\
         .filter(Task.label != "")\
@@ -88,7 +81,6 @@ def index():
     
     all_labels = sorted([l[0] for l in unique_labels_query])
 
-    # 5. Sorting
     active_tasks = sorted(
         [t for t in tasks if t.completed_at is None], 
         key=lambda t: t.position
@@ -115,11 +107,11 @@ def add_task():
     color = request.form.get('color', 'default')
     due_date = request.form.get('due_date')
     
-    # --- SANITIZE LABEL (Title Case) ---
     raw_label = request.form.get('label')
     label = raw_label.strip().title() if raw_label else None 
 
     if content:
+        # --- REVERTED TO ORIGINAL: ADD TO BOTTOM ---
         max_pos = db.session.query(db.func.max(Task.position)).scalar()
         new_pos = (max_pos + 1) if max_pos is not None else 0
         
@@ -141,14 +133,12 @@ def edit_task(id):
         task.content = request.form.get('content')
         task.color = request.form.get('color')
         
-        # --- SANITIZE LABEL (Title Case) ---
         raw_label = request.form.get('label')
         task.label = raw_label.strip().title() if raw_label else None
         
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
         
-        # Only save completion note if task is actually done
         if task.completed_at:
             note = request.form.get('completion_note')
             task.completion_note = note if note else None
@@ -163,13 +153,11 @@ def toggle_task(id):
     task = db.session.get(Task, id)
     if task:
         if task.completed_at:
-            # Unchecking: Wipe completion data
             task.completed_at = None
             task.completion_note = None
             max_pos = db.session.query(db.func.max(Task.position)).scalar() or 0
             task.position = max_pos + 1
         else:
-            # Checking
             task.completed_at = datetime.datetime.now()
         db.session.commit()
     return redirect(url_for('index'))
@@ -180,9 +168,6 @@ def move_task(id, direction):
     if not current or current.completed_at: return redirect(url_for('index'))
     query = Task.query.filter(Task.completed_at.is_(None))
     
-    # Respect current filter if we wanted to be fancy, but simple ordering is safer
-    # (Note: Moving items while filtered can be tricky, this keeps it simple)
-
     if direction == 'up':
         neighbor = query.filter(Task.position < current.position).order_by(Task.position.desc()).first()
     else: 
@@ -208,11 +193,9 @@ def sweep_completed():
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    # Auto-Backup on start
     if os.path.exists(db_path):
         with app.app_context():
             try: db.session.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
             except: pass
-    
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
