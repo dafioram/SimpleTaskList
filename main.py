@@ -4,6 +4,7 @@ from sqlalchemy import text
 import os
 import shutil
 import datetime
+import sqlite3
 
 app = Flask(__name__)
 
@@ -111,9 +112,8 @@ def add_task():
     label = raw_label.strip().title() if raw_label else None 
 
     if content:
-        # --- UPDATE: ADD TO TOP (Negative Numbers) ---
+        # Add to Top
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
-        # If min_pos is None (empty DB), start at 0. Otherwise subtract 1.
         new_pos = (min_pos - 1) if min_pos is not None else 0
         
         new_task = Task(
@@ -154,14 +154,13 @@ def toggle_task(id):
     task = db.session.get(Task, id)
     if task:
         if task.completed_at:
-            # --- UPDATE: Unchecking sends to TOP ---
+            # Unchecking sends to TOP
             task.completed_at = None
             task.completion_note = None
             
             min_pos = db.session.query(db.func.min(Task.position)).scalar()
             task.position = (min_pos - 1) if min_pos is not None else 0
         else:
-            # Checking
             task.completed_at = datetime.datetime.now()
         db.session.commit()
     return redirect(url_for('index'))
@@ -196,10 +195,31 @@ def sweep_completed():
     db.session.commit()
     return redirect(url_for('index'))
 
+# --- HELPER FUNCTIONS ---
+def perform_backup(src_path, backup_root):
+    """Creates a timestamped backup using SQLite's native backup API."""
+    try:
+        backup_dir = os.path.join(backup_root, 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        dst_path = os.path.join(backup_dir, f"tasks_backup_{timestamp}.db")
+        
+        src = sqlite3.connect(src_path)
+        dst = sqlite3.connect(dst_path)
+        
+        with dst:
+            src.backup(dst)
+            
+        dst.close()
+        src.close()
+        print(f"Database successfully backed up to: {dst_path}")
+    except Exception as e:
+        print(f"Backup failed: {e}")
+
 if __name__ == '__main__':
     if os.path.exists(db_path):
-        with app.app_context():
-            try: db.session.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
-            except: pass
+        perform_backup(db_path, data_dir)
+
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
