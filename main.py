@@ -111,9 +111,10 @@ def add_task():
     label = raw_label.strip().title() if raw_label else None 
 
     if content:
-        # --- REVERTED TO ORIGINAL: ADD TO BOTTOM ---
-        max_pos = db.session.query(db.func.max(Task.position)).scalar()
-        new_pos = (max_pos + 1) if max_pos is not None else 0
+        # --- UPDATE: ADD TO TOP (Negative Numbers) ---
+        min_pos = db.session.query(db.func.min(Task.position)).scalar()
+        # If min_pos is None (empty DB), start at 0. Otherwise subtract 1.
+        new_pos = (min_pos - 1) if min_pos is not None else 0
         
         new_task = Task(
             content=content, position=new_pos, color=color,
@@ -153,11 +154,14 @@ def toggle_task(id):
     task = db.session.get(Task, id)
     if task:
         if task.completed_at:
+            # --- UPDATE: Unchecking sends to TOP ---
             task.completed_at = None
             task.completion_note = None
-            max_pos = db.session.query(db.func.max(Task.position)).scalar() or 0
-            task.position = max_pos + 1
+            
+            min_pos = db.session.query(db.func.min(Task.position)).scalar()
+            task.position = (min_pos - 1) if min_pos is not None else 0
         else:
+            # Checking
             task.completed_at = datetime.datetime.now()
         db.session.commit()
     return redirect(url_for('index'))
