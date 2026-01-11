@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Task</title>
+    <style>
+        body {
+            background-color: #121212; color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
+        .edit-card {
+            background: #1e1e1e; padding: 30px; border-radius: 12px;
+            width: 100%; max-width: 400px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        h2 { margin-top: 0; margin-bottom: 0; color: #bb86fc; }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333;
+            font-size: 16px; background: #2c2c2c; color: white; outline: none;
+            box-sizing: border-box;
+            margin-bottom: 0; 
+        }
+        
+        .main-input { margin-bottom: 20px !important; }
+
+        .meta-inputs { display: flex; gap: 10px; }
+        
+        input.small-input {
+            background: #2c2c2c; color: #aaa; border: 1px solid #333; padding: 10px;
+            border-radius: 6px; font-size: 14px; outline: none; width: 50%;
+        }
+
+        .color-selector { 
+            display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; 
+        }
+        .color-option { cursor: pointer; position: relative; }
+        .color-option input { display: none; }
+        .dot { width: 30px; height: 30px; border-radius: 50%; display: block; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; }
+        
+        .dot.default { background-color: #555; }
+        .dot.purple { background-color: #d0bcff; }
+        .dot.blue { background-color: #448aff; }
+        .dot.green { background-color: #69f0ae; }
+        .dot.orange { background-color: #ffab40; }
+        .dot.red { background-color: #ff5252; }
+        .dot.pink   { background-color: #ff80ab; }
+        .dot.teal   { background-color: #64ffda; }
+        .dot.yellow { background-color: #ffff00; }
+        .dot.indigo { background-color: #536dfe; }
+
+        .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
+
+        .note-area {
+            width: 100%; padding: 15px; border-radius: 8px; 
+            border: 1px solid #bb86fc; 
+            font-size: 14px; background: #222; color: #d0bcff; outline: none;
+            box-sizing: border-box; font-family: inherit; resize: vertical;
+        }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .btn {
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none;
+        }
+        .save-btn { background-color: #bb86fc; color: #000; }
+        .cancel-btn { background-color: #333; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="edit-card">
+        <h2>Edit Task <span style="font-size: 0.6em; color: #555; vertical-align: middle;">#{{ task.id }}</span></h2>
+        <form method="POST">
+            <input type="text" name="content" class="main-input" value="{{ task.content }}" required autocomplete="off">
+            
+            <div class="meta-inputs">
+                <input type="text" name="label" class="small-input" placeholder="Label" value="{{ task.label or '' }}">
+                <input type="date" name="due_date" class="small-input" value="{{ task.due_date or '' }}">
+            </div>
+
+            <div style="margin-top: 15px;">
+                <label style="display:block; margin-bottom:5px; color:#666; font-size:0.8rem;">Requires Task ID (Optional):</label>
+                <input type="number" name="requires_id" class="small-input" style="width: 100%;" placeholder="e.g. 15" value="{{ task.requires_id or '' }}">
+            </div>
+
+            <div class="color-selector">
+                <label class="color-option"><input type="radio" name="color" value="default" {{ 'checked' if task.color == 'default' }}><span class="dot default"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="red" {{ 'checked' if task.color == 'red' }}><span class="dot red"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="orange" {{ 'checked' if task.color == 'orange' }}><span class="dot orange"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="yellow" {{ 'checked' if task.color == 'yellow' }}><span class="dot yellow"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="green" {{ 'checked' if task.color == 'green' }}><span class="dot green"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="teal" {{ 'checked' if task.color == 'teal' }}><span class="dot teal"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="blue" {{ 'checked' if task.color == 'blue' }}><span class="dot blue"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="indigo" {{ 'checked' if task.color == 'indigo' }}><span class="dot indigo"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="purple" {{ 'checked' if task.color == 'purple' }}><span class="dot purple"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="pink" {{ 'checked' if task.color == 'pink' }}><span class="dot pink"></span></label>
+            </div>
+
+            {% if task.completed_at %}
+            <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">
+                <label style="display:block; margin-bottom:8px; color:#666; font-size:0.9rem;">Completion Note (Optional):</label>
+                <textarea name="completion_note" class="note-area" rows="3" placeholder="Add details about how this was resolved...">{{ task.completion_note or '' }}</textarea>
+            </div>
+            {% endif %}
+
+            <div class="btn-group">
+                <a href="/" class="btn cancel-btn">Cancel</a>
+                <button type="submit" class="btn save-btn">Save</button>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

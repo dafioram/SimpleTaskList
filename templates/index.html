@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List</title>
+    <style>
+        body {
+            background-color: #121212; color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 15px; max-width: 600px; margin: 0 auto;
+        }
+
+        /* --- Input Area Container --- */
+        .add-container {
+            background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px;
+        }
+        
+        .add-container form { 
+            display: flex; flex-direction: column; gap: 15px; 
+        }
+
+        /* ROW 1: Main Input + Button */
+        .form-row-main { display: flex; gap: 10px; width: 100%; }
+
+        input[type="text"] {
+            flex-grow: 1; padding: 15px; border-radius: 8px; border: none; 
+            font-size: 16px; background: #2c2c2c; color: white; outline: none;
+        }
+
+        button.add-btn {
+            background-color: #bb86fc; color: #000; border: none; padding: 0 20px;
+            border-radius: 8px; font-weight: bold; font-size: 24px; cursor: pointer;
+            flex-shrink: 0;
+        }
+        button.add-btn:hover { background-color: #a370db; }
+
+        /* ROW 2: Label + Date */
+        .form-row-details { display: flex; gap: 10px; width: 100%; }
+
+        input.small-input {
+            background: #2c2c2c; color: #aaa; border: none; padding: 12px;
+            border-radius: 8px; font-size: 14px; outline: none;
+            flex: 1; min-width: 0;
+        }
+        input[type="date"] { font-family: inherit; }
+        
+        /* ROW 3: Colors */
+        .color-selector { 
+            display: flex; gap: 10px; align-items: center; justify-content: center; 
+            padding-top: 5px; flex-wrap: wrap; 
+        }
+        .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }
+        .color-option input { display: none; } 
+        .dot {
+            width: 30px; height: 30px; border-radius: 50%; display: block;
+            border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
+        }
+        
+        /* Color Definitions */
+        .dot.default { background-color: #555; }
+        .dot.purple { background-color: #d0bcff; }
+        .dot.blue { background-color: #448aff; }
+        .dot.green { background-color: #69f0ae; }
+        .dot.orange { background-color: #ffab40; }
+        .dot.red { background-color: #ff5252; }
+        .dot.pink   { background-color: #ff80ab; }
+        .dot.teal   { background-color: #64ffda; }
+        .dot.yellow { background-color: #ffff00; }
+        .dot.indigo { background-color: #536dfe; }
+
+        .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
+
+        /* --- Filter Bar --- */
+        .filter-bar {
+            display: flex; gap: 8px; margin-bottom: 20px;
+            flex-wrap: wrap; justify-content: center; 
+        }
+
+        .filter-pill {
+            text-decoration: none; font-size: 0.85rem; font-weight: bold;
+            padding: 6px 14px; border-radius: 20px;
+            background-color: #2c2c2c; color: #aaa; border: 1px solid #333;
+            transition: all 0.2s;
+        }
+        .filter-pill:hover { border-color: #bb86fc; color: #fff; }
+
+        .filter-pill.active {
+            background-color: #bb86fc; color: #000; border-color: #bb86fc;
+        }
+
+        a.label-chip { text-decoration: none; cursor: pointer; }
+        a.label-chip:hover { opacity: 0.8; }
+
+        /* --- Task Card --- */
+        .task-card {
+            background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
+            border-radius: 8px; display: flex; align-items: center; gap: 12px;
+            border-left: 6px solid #333; 
+        }
+        
+        .task-card.border-purple { border-left-color: #d0bcff; }
+        .task-card.border-blue { border-left-color: #448aff; }
+        .task-card.border-green { border-left-color: #69f0ae; }
+        .task-card.border-orange { border-left-color: #ffab40; }
+        .task-card.border-red { border-left-color: #ff5252; }
+        .task-card.border-pink   { border-left-color: #ff80ab; }
+        .task-card.border-teal   { border-left-color: #64ffda; }
+        .task-card.border-yellow { border-left-color: #ffff00; }
+        .task-card.border-indigo { border-left-color: #536dfe; }
+
+        .task-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; }
+        
+        .completion-note {
+            margin-top: 6px; font-size: 0.95rem; color: #d0bcff;
+            font-style: italic; border-left: 2px solid #555; padding-left: 8px;
+        }
+
+        .task-meta {
+            display: flex; align-items: center; gap: 8px; margin-top: 6px;
+            font-size: 0.75rem; color: #666; flex-wrap: wrap;
+        }
+
+        /* NEW: Dependency Status Styles */
+        .dep-active { color: #ff8a80; font-weight: bold; }
+        .dep-done { color: #69f0ae; text-decoration: line-through; opacity: 0.7; }
+
+        .label-chip {
+            padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            background-color: #333; color: #ccc;
+        }
+        .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
+        .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
+        .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
+        .chip-orange { background-color: rgba(255, 171, 64, 0.15); color: #ffab40; }
+        .chip-red    { background-color: rgba(255, 82, 82, 0.15); color: #ff5252; }
+        .chip-pink   { background-color: rgba(255, 128, 171, 0.15); color: #ff80ab; }
+        .chip-teal   { background-color: rgba(100, 255, 218, 0.15); color: #64ffda; }
+        .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
+        .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
+
+        /* Order Controls Spacing */
+        .order-controls { 
+            display: flex; flex-direction: column; gap: 4px; 
+            margin-right: 10px; 
+        }
+        .arrow-btn { text-decoration: none; color: #555; font-size: 14px; line-height: 1; padding: 2px 6px; }
+        .arrow-btn:hover { color: #fff; }
+
+        .toggle-btn {
+            width: 24px; height: 24px; border-radius: 50%; border: 2px solid #777;
+            background: transparent; display: flex; align-items: center; justify-content: center;
+            text-decoration: none; color: transparent; flex-shrink: 0;
+        }
+        .toggle-btn:hover { border-color: #fff; }
+        .icon-btn { text-decoration: none; color: #444; font-size: 1.2rem; padding: 0 5px; }
+        .icon-btn:hover { color: #fff; }
+        .delete-btn:hover { color: #ff5252; }
+
+        .task-card.completed { opacity: 0.5; background-color: #181818; border-left-color: #222; }
+        .task-card.completed .task-text { text-decoration: line-through; color: #888; }
+        .task-card.completed .toggle-btn { background-color: #555; border-color: #555; color: #000; }
+        .task-card.completed .order-controls { visibility: hidden; }
+        .task-card.completed .label-chip { background-color: #222; color: #555; }
+    </style>
+</head>
+<body>
+
+    {% if all_labels %}
+    <div class="filter-bar">
+        <a href="/" class="filter-pill {{ 'active' if not active_filter }}">All</a>
+        {% for lbl in all_labels %}
+        <a href="/?label={{ lbl }}" class="filter-pill {{ 'active' if active_filter == lbl }}">
+            {{ lbl }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="add-container">
+        <form action="/add" method="POST">
+            <div class="form-row-main">
+                <input type="text" name="content" placeholder="Add a task..." required autocomplete="off">
+                <button type="submit" class="add-btn">+</button>
+            </div>
+            <div class="form-row-details">
+                <input type="text" name="label" class="small-input" placeholder="Label">
+                <input type="date" name="due_date" class="small-input">
+            </div>
+            <div class="color-selector">
+                <label class="color-option"><input type="radio" name="color" value="default" checked><span class="dot default"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="red"><span class="dot red"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="orange"><span class="dot orange"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="yellow"><span class="dot yellow"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="green"><span class="dot green"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="teal"><span class="dot teal"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="blue"><span class="dot blue"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="indigo"><span class="dot indigo"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="purple"><span class="dot purple"></span></label>
+                <label class="color-option"><input type="radio" name="color" value="pink"><span class="dot pink"></span></label>
+            </div>
+        </form>
+    </div>
+
+    <div id="task-list">
+        {% for task in tasks %}
+        <div class="task-card border-{{ task.color }} {{ 'completed' if task.completed_at else '' }}">
+            
+            <div class="order-controls">
+                <a href="/move/{{ task.id }}/up" class="arrow-btn">▲</a>
+                <a href="/move/{{ task.id }}/down" class="arrow-btn">▼</a>
+            </div>
+
+            <a href="/toggle/{{ task.id }}" class="toggle-btn">
+                {% if task.completed_at %}✓{% endif %}
+            </a>
+
+            <div class="task-content">
+                <span class="task-text">{{ task.content }}</span>
+
+                {% if task.completion_note %}
+                    <div class="completion-note">“{{ task.completion_note }}”</div>
+                {% endif %}
+                
+                <div class="task-meta">
+                    <span style="font-family: monospace; color: #555;">#{{ task.id }}</span>
+                    
+                    {% if task.requires_id %}
+                        {% if status_map.get(task.requires_id) %}
+                            <span class="dep-done">• Requires: #{{ task.requires_id }}</span>
+                        {% else %}
+                            <span class="dep-active">• Requires: #{{ task.requires_id }}</span>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if task.label %}
+                        <a href="/?label={{ task.label }}" class="label-chip chip-{{ task.color }}">{{ task.label }}</a>
+                    {% endif %}
+                    
+                    <span>Created: {{ task.created_at.strftime('%b %d') }}</span>
+
+                    {% if task.completed_at %}
+                        <span>• Done: {{ task.completed_at.strftime('%b %d') }}</span>
+                    {% else %}
+                        {% set days_msg = task.get_time_display() %}
+                        {% if days_msg %}
+                            <span>• {{ days_msg }}</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <a href="/edit/{{ task.id }}" class="icon-btn">✎</a>
+            <a href="/delete/{{ task.id }}" class="icon-btn delete-btn" onclick="return confirm('Delete this task?');">×</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; margin-bottom: 50px;">
+        <a href="/sweep" onclick="return confirm('Clear all finished tasks?');"
+           style="color: #666; text-decoration: none; font-size: 0.9rem; border: 1px solid #333; padding: 8px 16px; border-radius: 20px;">
+           🧹 Sweep Completed
+        </a>
+    </div>
+</body>
+</html>
