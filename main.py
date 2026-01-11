@@ -31,6 +31,9 @@ class Task(db.Model):
     due_date = db.Column(db.String(20), nullable=True)
     completion_note = db.Column(db.Text, nullable=True)
     
+    # NEW: Dependency (Self-referential ID)
+    requires_id = db.Column(db.Integer, nullable=True)
+    
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
     completed_at = db.Column(db.DateTime, nullable=True) 
@@ -63,11 +66,21 @@ with app.app_context():
         except: pass
         try: conn.execute(text("ALTER TABLE task ADD COLUMN completion_note TEXT"))
         except: pass
+        # Migrate Dependency Column
+        try: conn.execute(text("ALTER TABLE task ADD COLUMN requires_id INTEGER"))
+        except: pass
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
+    # 1. Get ALL tasks first to build the Status Map (Global lookup)
+    # We need this separately because the 'tasks' query below might be filtered by label,
+    # but a dependency might exist outside that label.
+    all_tasks_raw = Task.query.all()
+    status_map = {t.id: (t.completed_at is not None) for t in all_tasks_raw}
+
+    # 2. Filter logic for display
     filter_label = request.args.get('label')
     query = Task.query
     if filter_label:
@@ -96,7 +109,8 @@ def index():
     return render_template('index.html', 
                            tasks=active_tasks + finished_tasks, 
                            all_labels=all_labels, 
-                           active_filter=filter_label)
+                           active_filter=filter_label,
+                           status_map=status_map) # Pass map to HTML
 
 @app.route('/sw.js')
 def service_worker():
@@ -112,7 +126,6 @@ def add_task():
     label = raw_label.strip().title() if raw_label else None 
 
     if content:
-        # Add to Top
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
         new_pos = (min_pos - 1) if min_pos is not None else 0
         
@@ -140,6 +153,18 @@ def edit_task(id):
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
         
+        # --- NEW: Save Dependency ID ---
+        req_id = request.form.get('requires_id')
+        if req_id and req_id.isdigit():
+            req_id_int = int(req_id)
+            # Validation: 1. Not self. 2. Task exists.
+            if req_id_int != task.id and db.session.get(Task, req_id_int):
+                task.requires_id = req_id_int
+            else:
+                task.requires_id = None # Invalid ID entered
+        else:
+            task.requires_id = None # Cleared or empty
+
         if task.completed_at:
             note = request.form.get('completion_note')
             task.completion_note = note if note else None
@@ -154,10 +179,8 @@ def toggle_task(id):
     task = db.session.get(Task, id)
     if task:
         if task.completed_at:
-            # Unchecking sends to TOP
             task.completed_at = None
             task.completion_note = None
-            
             min_pos = db.session.query(db.func.min(Task.position)).scalar()
             task.position = (min_pos - 1) if min_pos is not None else 0
         else:
@@ -185,14 +208,32 @@ def move_task(id, direction):
 def delete_task(id):
     task = db.session.get(Task, id)
     if task:
+        # --- CASCADE UPDATE: Unlink dependents ---
+        dependents = Task.query.filter_by(requires_id=task.id).all()
+        for dep in dependents:
+            dep.requires_id = None
+            
         db.session.delete(task)
         db.session.commit()
     return redirect(url_for('index'))
 
 @app.route('/sweep')
 def sweep_completed():
-    db.session.query(Task).filter(Task.completed_at.isnot(None)).delete()
-    db.session.commit()
+    # 1. Get IDs of tasks about to be deleted
+    tasks_to_delete = db.session.query(Task).filter(Task.completed_at.isnot(None)).all()
+    ids_to_delete = [t.id for t in tasks_to_delete]
+
+    if ids_to_delete:
+        # 2. Unlink any active tasks that depend on these
+        dependents = Task.query.filter(Task.requires_id.in_(ids_to_delete)).all()
+        for dep in dependents:
+            dep.requires_id = None
+        
+        # 3. Delete
+        for t in tasks_to_delete:
+            db.session.delete(t)
+            
+        db.session.commit()
     return redirect(url_for('index'))
 
 # --- HELPER FUNCTIONS ---

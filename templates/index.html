@@ -100,7 +100,6 @@
             border-left: 6px solid #333; 
         }
         
-        /* Group Borders */
         .task-card.border-purple { border-left-color: #d0bcff; }
         .task-card.border-blue { border-left-color: #448aff; }
         .task-card.border-green { border-left-color: #69f0ae; }
@@ -124,12 +123,15 @@
             font-size: 0.75rem; color: #666; flex-wrap: wrap;
         }
 
+        /* NEW: Dependency Status Styles */
+        .dep-active { color: #ff8a80; font-weight: bold; }
+        .dep-done { color: #69f0ae; text-decoration: line-through; opacity: 0.7; }
+
         .label-chip {
             padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold;
             text-transform: uppercase; letter-spacing: 0.5px;
             background-color: #333; color: #ccc;
         }
-        /* Chip Colors */
         .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
         .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
         .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
@@ -140,10 +142,10 @@
         .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
         .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
 
-        /* --- UPDATED: Order Controls Spacing --- */
+        /* Order Controls Spacing */
         .order-controls { 
             display: flex; flex-direction: column; gap: 4px; 
-            margin-right: 10px; /* FIX: Added 10px margin to push circle away */
+            margin-right: 10px; 
         }
         .arrow-btn { text-decoration: none; color: #555; font-size: 14px; line-height: 1; padding: 2px 6px; }
         .arrow-btn:hover { color: #fff; }
@@ -225,6 +227,14 @@
                 
                 <div class="task-meta">
                     <span style="font-family: monospace; color: #555;">#{{ task.id }}</span>
+                    
+                    {% if task.requires_id %}
+                        {% if status_map.get(task.requires_id) %}
+                            <span class="dep-done">• Requires: #{{ task.requires_id }}</span>
+                        {% else %}
+                            <span class="dep-active">• Requires: #{{ task.requires_id }}</span>
+                        {% endif %}
+                    {% endif %}
 
                     {% if task.label %}
                         <a href="/?label={{ task.label }}" class="label-chip chip-{{ task.color }}">{{ task.label }}</a>

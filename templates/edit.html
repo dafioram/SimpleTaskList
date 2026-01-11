@@ -19,40 +19,29 @@
         }
         h2 { margin-top: 0; margin-bottom: 0; color: #bb86fc; }
         
-        /* --- Main Task Input --- */
-        input[type="text"] {
+        input[type="text"], input[type="number"] {
             width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333;
             font-size: 16px; background: #2c2c2c; color: white; outline: none;
             box-sizing: border-box;
-            /* Spacing below the main input */
-            margin-bottom: 20px; 
+            margin-bottom: 0; 
         }
         
-        /* --- Row for Label & Date --- */
+        .main-input { margin-bottom: 20px !important; }
+
         .meta-inputs { display: flex; gap: 10px; }
         
-        /* Specific Styles for Label & Date inputs */
         input.small-input {
             background: #2c2c2c; color: #aaa; border: 1px solid #333; padding: 10px;
             border-radius: 6px; font-size: 14px; outline: none; width: 50%;
-            margin-bottom: 0; 
         }
 
-        /* --- Color Dots --- */
         .color-selector { 
-            display: flex; 
-            gap: 10px; 
-            justify-content: center;
-            /* Space above colors */
-            margin-top: 10px;
-            flex-wrap: wrap; /* Allows 10 dots to wrap cleanly */
+            display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; 
         }
         .color-option { cursor: pointer; position: relative; }
         .color-option input { display: none; }
-        
         .dot { width: 30px; height: 30px; border-radius: 50%; display: block; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; }
         
-        /* Color Definitions */
         .dot.default { background-color: #555; }
         .dot.purple { background-color: #d0bcff; }
         .dot.blue { background-color: #448aff; }
@@ -66,7 +55,6 @@
 
         .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
-        /* Completion Note Area */
         .note-area {
             width: 100%; padding: 15px; border-radius: 8px; 
             border: 1px solid #bb86fc; 
@@ -86,13 +74,18 @@
 <body>
 
     <div class="edit-card">
-        <h2>Edit Task</h2>
+        <h2>Edit Task <span style="font-size: 0.6em; color: #555; vertical-align: middle;">#{{ task.id }}</span></h2>
         <form method="POST">
-            <input type="text" name="content" value="{{ task.content }}" required autocomplete="off">
+            <input type="text" name="content" class="main-input" value="{{ task.content }}" required autocomplete="off">
             
             <div class="meta-inputs">
                 <input type="text" name="label" class="small-input" placeholder="Label" value="{{ task.label or '' }}">
                 <input type="date" name="due_date" class="small-input" value="{{ task.due_date or '' }}">
+            </div>
+
+            <div style="margin-top: 15px;">
+                <label style="display:block; margin-bottom:5px; color:#666; font-size:0.8rem;">Requires Task ID (Optional):</label>
+                <input type="number" name="requires_id" class="small-input" style="width: 100%;" placeholder="e.g. 15" value="{{ task.requires_id or '' }}">
             </div>
 
             <div class="color-selector">
