@@ -24,10 +24,15 @@
         /* ROW 1: Main Input + Button */
         .form-row-main { display: flex; gap: 10px; width: 100%; }
 
-        input[type="text"] {
-            flex-grow: 1; padding: 15px; border-radius: 8px; border: none; 
+        input[type="text"], textarea {
+            width: 100%; padding: 12px; border-radius: 8px; border: none; 
             font-size: 16px; background: #2c2c2c; color: white; outline: none;
+            font-family: inherit; resize: vertical;
+            box-sizing: border-box; 
         }
+        
+        /* Adjust main input to grab space */
+        input[name="content"] { flex-grow: 1; padding: 15px; }
 
         button.add-btn {
             background-color: #bb86fc; color: #000; border: none; padding: 0 20px;
@@ -43,6 +48,7 @@
             background: #2c2c2c; color: #aaa; border: none; padding: 12px;
             border-radius: 8px; font-size: 14px; outline: none;
             flex: 1; min-width: 0;
+            box-sizing: border-box;
         }
         input[type="date"] { font-family: inherit; }
         
@@ -96,7 +102,7 @@
         /* --- Task Card --- */
         .task-card {
             background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
-            border-radius: 8px; display: flex; align-items: center; gap: 12px;
+            border-radius: 8px; display: flex; align-items: flex-start; gap: 12px;
             border-left: 6px solid #333; 
         }
         
@@ -111,7 +117,26 @@
         .task-card.border-indigo { border-left-color: #536dfe; }
 
         .task-content { flex-grow: 1; display: flex; flex-direction: column; }
+        
+        .task-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; }
+        
+        /* NEW: Details/Context Styles */
+        .context-toggle {
+            background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer;
+            padding: 0; margin-top: 4px; /* Move down a bit, align left */
+            transition: color 0.2s; display: inline-flex; align-items: center; 
+            font-weight: bold;
+        }
+        .context-toggle:hover { color: #bb86fc; }
+        
+        .task-context {
+            display: none; /* Hidden by default */
+            margin-top: 8px; font-size: 0.95rem; color: #bbb;
+            background: #252525; padding: 10px; border-radius: 6px;
+            white-space: pre-wrap; /* Preserves newlines */
+            border-left: 2px solid #555;
+        }
         
         .completion-note {
             margin-top: 6px; font-size: 0.95rem; color: #d0bcff;
@@ -123,7 +148,6 @@
             font-size: 0.75rem; color: #666; flex-wrap: wrap;
         }
 
-        /* NEW: Dependency Status Styles */
         .dep-active { color: #ff8a80; font-weight: bold; }
         .dep-done { color: #69f0ae; text-decoration: line-through; opacity: 0.7; }
 
@@ -142,10 +166,9 @@
         .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
         .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
 
-        /* Order Controls Spacing */
         .order-controls { 
             display: flex; flex-direction: column; gap: 4px; 
-            margin-right: 10px; 
+            margin-right: 10px; margin-top: 2px;
         }
         .arrow-btn { text-decoration: none; color: #555; font-size: 14px; line-height: 1; padding: 2px 6px; }
         .arrow-btn:hover { color: #fff; }
@@ -153,7 +176,7 @@
         .toggle-btn {
             width: 24px; height: 24px; border-radius: 50%; border: 2px solid #777;
             background: transparent; display: flex; align-items: center; justify-content: center;
-            text-decoration: none; color: transparent; flex-shrink: 0;
+            text-decoration: none; color: transparent; flex-shrink: 0; margin-top: 2px;
         }
         .toggle-btn:hover { border-color: #fff; }
         .icon-btn { text-decoration: none; color: #444; font-size: 1.2rem; padding: 0 5px; }
@@ -166,6 +189,19 @@
         .task-card.completed .order-controls { visibility: hidden; }
         .task-card.completed .label-chip { background-color: #222; color: #555; }
     </style>
+    <script>
+        function toggleContext(id) {
+            const contextDiv = document.getElementById('context-' + id);
+            const btn = document.getElementById('btn-ctx-' + id);
+            if (contextDiv.style.display === 'block') {
+                contextDiv.style.display = 'none';
+                btn.innerHTML = 'Details ▶'; // Right carrot
+            } else {
+                contextDiv.style.display = 'block';
+                btn.innerHTML = 'Details ▼'; // Down carrot
+            }
+        }
+    </script>
 </head>
 <body>
 
@@ -186,6 +222,9 @@
                 <input type="text" name="content" placeholder="Add a task..." required autocomplete="off">
                 <button type="submit" class="add-btn">+</button>
             </div>
+            
+            <textarea name="context" rows="2" placeholder="Add details, links, or notes..." style="resize: none; font-size: 0.9rem; color: #aaa;"></textarea>
+
             <div class="form-row-details">
                 <input type="text" name="label" class="small-input" placeholder="Label">
                 <input type="date" name="due_date" class="small-input">
@@ -219,7 +258,17 @@
             </a>
 
             <div class="task-content">
-                <span class="task-text">{{ task.content }}</span>
+                <div class="task-header">
+                    <span class="task-text">{{ task.content }}</span>
+                </div>
+                
+                {% if task.context %}
+                    <button id="btn-ctx-{{ task.id }}" class="context-toggle" onclick="toggleContext({{ task.id }})" title="Show Details">Details ▶</button>
+                {% endif %}
+
+                {% if task.context %}
+                    <div id="context-{{ task.id }}" class="task-context">{{ task.context }}</div>
+                {% endif %}
 
                 {% if task.completion_note %}
                     <div class="completion-note">“{{ task.completion_note }}”</div>
