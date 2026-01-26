@@ -40,7 +40,7 @@ class Task(db.Model):
     # Dependency
     requires_id = db.Column(db.Integer, nullable=True)
 
-    # NEW: Context / Details
+    # Context / Details
     context = db.Column(db.Text, nullable=True)
     
     # Timestamps
@@ -77,7 +77,6 @@ with app.app_context():
         except: pass
         try: conn.execute(text("ALTER TABLE task ADD COLUMN requires_id INTEGER"))
         except: pass
-        # Migrate Context Column
         try: conn.execute(text("ALTER TABLE task ADD COLUMN context TEXT"))
         except: pass
 
@@ -85,11 +84,9 @@ with app.app_context():
 
 @app.route('/')
 def index():
-    # 1. Get ALL tasks first to build the Status Map (Global lookup)
     all_tasks_raw = Task.query.all()
     status_map = {t.id: (t.completed_at is not None) for t in all_tasks_raw}
 
-    # 2. Filter logic for display
     filter_label = request.args.get('label')
     query = Task.query
     if filter_label:
@@ -104,6 +101,7 @@ def index():
     
     all_labels = sorted([l[0] for l in unique_labels_query])
 
+    # Sort logic is critical here for initial render
     active_tasks = sorted(
         [t for t in tasks if t.completed_at is None], 
         key=lambda t: t.position
@@ -134,10 +132,10 @@ def add_task():
     raw_label = request.form.get('label')
     label = raw_label.strip().title() if raw_label else None 
 
-    # NEW: Context
     context = request.form.get('context')
 
     if content:
+        # Add to Top logic (Negative numbers)
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
         new_pos = (min_pos - 1) if min_pos is not None else 0
         
@@ -166,7 +164,6 @@ def edit_task(id):
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
         
-        # Dependency
         req_id = request.form.get('requires_id')
         if req_id and req_id.isdigit():
             req_id_int = int(req_id)
@@ -177,7 +174,6 @@ def edit_task(id):
         else:
             task.requires_id = None
 
-        # NEW: Context
         ctxt = request.form.get('context')
         task.context = ctxt if ctxt else None
 
@@ -204,27 +200,26 @@ def toggle_task(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-@app.route('/move/<int:id>/<direction>')
-def move_task(id, direction):
-    current = db.session.get(Task, id)
-    if not current or current.completed_at: return redirect(url_for('index'))
-    query = Task.query.filter(Task.completed_at.is_(None))
+# --- NEW: Reorder Route (AJAX) ---
+@app.route('/reorder', methods=['POST'])
+def reorder_tasks():
+    data = request.get_json()
+    new_order = data.get('order', []) # List of IDs e.g. [5, 2, 10]
     
-    if direction == 'up':
-        neighbor = query.filter(Task.position < current.position).order_by(Task.position.desc()).first()
-    else: 
-        neighbor = query.filter(Task.position > current.position).order_by(Task.position.asc()).first()
-
-    if neighbor:
-        current.position, neighbor.position = neighbor.position, current.position
-        db.session.commit()
-    return redirect(url_for('index'))
+    # We iterate through the ID list sent by the frontend
+    # and assign strictly increasing positions (0, 1, 2...)
+    for index, task_id in enumerate(new_order):
+        task = db.session.get(Task, task_id)
+        if task:
+            task.position = index
+            
+    db.session.commit()
+    return {'status': 'success'}
 
 @app.route('/delete/<int:id>')
 def delete_task(id):
     task = db.session.get(Task, id)
     if task:
-        # Cascade Update
         dependents = Task.query.filter_by(requires_id=task.id).all()
         for dep in dependents:
             dep.requires_id = None

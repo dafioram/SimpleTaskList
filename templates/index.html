@@ -4,6 +4,7 @@
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <title>Task List</title>
     <style>
         body {
@@ -16,22 +17,16 @@
         .add-container {
             background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px;
         }
-        
-        .add-container form { 
-            display: flex; flex-direction: column; gap: 15px; 
-        }
+        .add-container form { display: flex; flex-direction: column; gap: 15px; }
 
-        /* ROW 1: Main Input + Button */
         .form-row-main { display: flex; gap: 10px; width: 100%; }
 
         input[type="text"], textarea {
             width: 100%; padding: 12px; border-radius: 8px; border: none; 
             font-size: 16px; background: #2c2c2c; color: white; outline: none;
-            font-family: inherit; resize: vertical;
-            box-sizing: border-box; 
+            font-family: inherit; resize: vertical; box-sizing: border-box; 
         }
         
-        /* Adjust main input to grab space */
         input[name="content"] { flex-grow: 1; padding: 15px; }
 
         button.add-btn {
@@ -41,30 +36,23 @@
         }
         button.add-btn:hover { background-color: #a370db; }
 
-        /* ROW 2: Label + Date */
         .form-row-details { display: flex; gap: 10px; width: 100%; }
 
         input.small-input {
             background: #2c2c2c; color: #aaa; border: none; padding: 12px;
             border-radius: 8px; font-size: 14px; outline: none;
-            flex: 1; min-width: 0;
-            box-sizing: border-box;
+            flex: 1; min-width: 0; box-sizing: border-box;
         }
         input[type="date"] { font-family: inherit; }
         
-        /* ROW 3: Colors */
         .color-selector { 
             display: flex; gap: 10px; align-items: center; justify-content: center; 
             padding-top: 5px; flex-wrap: wrap; 
         }
         .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }
         .color-option input { display: none; } 
-        .dot {
-            width: 30px; height: 30px; border-radius: 50%; display: block;
-            border: 2px solid transparent; opacity: 0.5; transition: all 0.2s;
-        }
+        .dot { width: 30px; height: 30px; border-radius: 50%; display: block; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; }
         
-        /* Color Definitions */
         .dot.default { background-color: #555; }
         .dot.purple { background-color: #d0bcff; }
         .dot.blue { background-color: #448aff; }
@@ -75,15 +63,10 @@
         .dot.teal   { background-color: #64ffda; }
         .dot.yellow { background-color: #ffff00; }
         .dot.indigo { background-color: #536dfe; }
-
         .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
-        /* --- Filter Bar --- */
-        .filter-bar {
-            display: flex; gap: 8px; margin-bottom: 20px;
-            flex-wrap: wrap; justify-content: center; 
-        }
-
+        /* Filter Bar */
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
         .filter-pill {
             text-decoration: none; font-size: 0.85rem; font-weight: bold;
             padding: 6px 14px; border-radius: 20px;
@@ -91,19 +74,15 @@
             transition: all 0.2s;
         }
         .filter-pill:hover { border-color: #bb86fc; color: #fff; }
-
-        .filter-pill.active {
-            background-color: #bb86fc; color: #000; border-color: #bb86fc;
-        }
-
-        a.label-chip { text-decoration: none; cursor: pointer; }
-        a.label-chip:hover { opacity: 0.8; }
+        .filter-pill.active { background-color: #bb86fc; color: #000; border-color: #bb86fc; }
 
         /* --- Task Card --- */
         .task-card {
             background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
             border-radius: 8px; display: flex; align-items: flex-start; gap: 12px;
             border-left: 6px solid #333; 
+            /* Essential for smooth dragging */
+            touch-action: pan-y; 
         }
         
         .task-card.border-purple { border-left-color: #d0bcff; }
@@ -117,25 +96,18 @@
         .task-card.border-indigo { border-left-color: #536dfe; }
 
         .task-content { flex-grow: 1; display: flex; flex-direction: column; }
-        
         .task-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; }
         
-        /* NEW: Details/Context Styles */
         .context-toggle {
             background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer;
-            padding: 0; margin-top: 4px; /* Move down a bit, align left */
-            transition: color 0.2s; display: inline-flex; align-items: center; 
-            font-weight: bold;
+            padding: 0; margin-top: 4px; transition: color 0.2s; display: inline-flex; align-items: center; font-weight: bold;
         }
         .context-toggle:hover { color: #bb86fc; }
-        
         .task-context {
-            display: none; /* Hidden by default */
-            margin-top: 8px; font-size: 0.95rem; color: #bbb;
+            display: none; margin-top: 8px; font-size: 0.95rem; color: #bbb;
             background: #252525; padding: 10px; border-radius: 6px;
-            white-space: pre-wrap; /* Preserves newlines */
-            border-left: 2px solid #555;
+            white-space: pre-wrap; border-left: 2px solid #555;
         }
         
         .completion-note {
@@ -156,6 +128,7 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             background-color: #333; color: #ccc;
         }
+        /* Chip Colors... (omitted detailed list for brevity, same as before) */
         .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
         .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
         .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
@@ -166,12 +139,16 @@
         .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
         .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
 
-        .order-controls { 
-            display: flex; flex-direction: column; gap: 4px; 
-            margin-right: 10px; margin-top: 2px;
+        /* --- DRAG HANDLE --- */
+        .drag-handle { 
+            cursor: grab; color: #555; font-size: 20px; line-height: 1; padding: 5px; 
+            display: flex; align-items: center; justify-content: center;
+            margin-right: 5px; user-select: none;
         }
-        .arrow-btn { text-decoration: none; color: #555; font-size: 14px; line-height: 1; padding: 2px 6px; }
-        .arrow-btn:hover { color: #fff; }
+        .drag-handle:active { cursor: grabbing; color: #fff; }
+        
+        /* Visual style for the item being dragged */
+        .sortable-ghost { opacity: 0.2; background-color: #bb86fc; }
 
         .toggle-btn {
             width: 24px; height: 24px; border-radius: 50%; border: 2px solid #777;
@@ -186,7 +163,7 @@
         .task-card.completed { opacity: 0.5; background-color: #181818; border-left-color: #222; }
         .task-card.completed .task-text { text-decoration: line-through; color: #888; }
         .task-card.completed .toggle-btn { background-color: #555; border-color: #555; color: #000; }
-        .task-card.completed .order-controls { visibility: hidden; }
+        .task-card.completed .drag-handle { visibility: hidden; } /* Hide handle on completed tasks */
         .task-card.completed .label-chip { background-color: #222; color: #555; }
     </style>
     <script>
@@ -195,12 +172,50 @@
             const btn = document.getElementById('btn-ctx-' + id);
             if (contextDiv.style.display === 'block') {
                 contextDiv.style.display = 'none';
-                btn.innerHTML = 'Details ▶'; // Right carrot
+                btn.innerHTML = 'Details ▶';
             } else {
                 contextDiv.style.display = 'block';
-                btn.innerHTML = 'Details ▼'; // Down carrot
+                btn.innerHTML = 'Details ▼';
             }
         }
+
+        // --- DRAG AND DROP LOGIC ---
+        document.addEventListener('DOMContentLoaded', function() {
+            var el = document.getElementById('task-list');
+            var sortable = Sortable.create(el, {
+                handle: '.drag-handle', // Drag handle selector within list items
+                animation: 150, // Animation speed (ms)
+                ghostClass: 'sortable-ghost', // Class name for the drop placeholder
+                filter: '.completed', // Do not allow dragging completed items
+                
+                onEnd: function (evt) {
+                    // 1. Get all task IDs in their new order
+                    var itemOrder = [];
+                    // Select only active tasks to re-index
+                    var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
+                    
+                    activeItems.forEach(function(item) {
+                        itemOrder.push(item.getAttribute('data-id'));
+                    });
+
+                    // 2. Send new order to backend
+                    fetch('/reorder', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ order: itemOrder }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Order saved:', data);
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                }
+            });
+        });
     </script>
 </head>
 <body>
@@ -246,12 +261,9 @@
 
     <div id="task-list">
         {% for task in tasks %}
-        <div class="task-card border-{{ task.color }} {{ 'completed' if task.completed_at else '' }}">
+        <div class="task-card border-{{ task.color }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
             
-            <div class="order-controls">
-                <a href="/move/{{ task.id }}/up" class="arrow-btn">▲</a>
-                <a href="/move/{{ task.id }}/down" class="arrow-btn">▼</a>
-            </div>
+            <div class="drag-handle">⋮⋮</div>
 
             <a href="/toggle/{{ task.id }}" class="toggle-btn">
                 {% if task.completed_at %}✓{% endif %}
