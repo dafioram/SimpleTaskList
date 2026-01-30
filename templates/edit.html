@@ -19,14 +19,14 @@
         }
         h2 { margin-top: 0; margin-bottom: 0; color: #bb86fc; }
         
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], textarea {
             width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333;
             font-size: 16px; background: #2c2c2c; color: white; outline: none;
-            box-sizing: border-box;
-            margin-bottom: 0; 
+            box-sizing: border-box; margin-bottom: 0; 
+            font-family: inherit;
         }
         
-        .main-input { margin-bottom: 20px !important; }
+        .main-input { margin-bottom: 10px !important; }
 
         .meta-inputs { display: flex; gap: 10px; }
         
@@ -59,7 +59,7 @@
             width: 100%; padding: 15px; border-radius: 8px; 
             border: 1px solid #bb86fc; 
             font-size: 14px; background: #222; color: #d0bcff; outline: none;
-            box-sizing: border-box; font-family: inherit; resize: vertical;
+            box-sizing: border-box; resize: vertical;
         }
 
         .btn-group { display: flex; gap: 10px; margin-top: 10px; }
@@ -77,6 +77,10 @@
         <h2>Edit Task <span style="font-size: 0.6em; color: #555; vertical-align: middle;">#{{ task.id }}</span></h2>
         <form method="POST">
             <input type="text" name="content" class="main-input" value="{{ task.content }}" required autocomplete="off">
+            
+            <div style="margin-bottom: 20px;">
+                <textarea name="context" rows="3" placeholder="Add details, links, or notes..." style="font-size: 14px; color: #aaa;">{{ task.context or '' }}</textarea>
+            </div>
             
             <div class="meta-inputs">
                 <input type="text" name="label" class="small-input" placeholder="Label" value="{{ task.label or '' }}">

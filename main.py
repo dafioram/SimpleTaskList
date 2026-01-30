@@ -1,12 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 import shutil
 import datetime
 import sqlite3
 
 app = Flask(__name__)
+
+# --- PROXY FIX ---
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
 
 # --- PATH CONFIGURATION ---
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -31,8 +37,11 @@ class Task(db.Model):
     due_date = db.Column(db.String(20), nullable=True)
     completion_note = db.Column(db.Text, nullable=True)
     
-    # NEW: Dependency (Self-referential ID)
+    # Dependency
     requires_id = db.Column(db.Integer, nullable=True)
+
+    # Context / Details
+    context = db.Column(db.Text, nullable=True)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
@@ -66,21 +75,18 @@ with app.app_context():
         except: pass
         try: conn.execute(text("ALTER TABLE task ADD COLUMN completion_note TEXT"))
         except: pass
-        # Migrate Dependency Column
         try: conn.execute(text("ALTER TABLE task ADD COLUMN requires_id INTEGER"))
+        except: pass
+        try: conn.execute(text("ALTER TABLE task ADD COLUMN context TEXT"))
         except: pass
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
-    # 1. Get ALL tasks first to build the Status Map (Global lookup)
-    # We need this separately because the 'tasks' query below might be filtered by label,
-    # but a dependency might exist outside that label.
     all_tasks_raw = Task.query.all()
     status_map = {t.id: (t.completed_at is not None) for t in all_tasks_raw}
 
-    # 2. Filter logic for display
     filter_label = request.args.get('label')
     query = Task.query
     if filter_label:
@@ -95,6 +101,7 @@ def index():
     
     all_labels = sorted([l[0] for l in unique_labels_query])
 
+    # Sort logic is critical here for initial render
     active_tasks = sorted(
         [t for t in tasks if t.completed_at is None], 
         key=lambda t: t.position
@@ -110,7 +117,7 @@ def index():
                            tasks=active_tasks + finished_tasks, 
                            all_labels=all_labels, 
                            active_filter=filter_label,
-                           status_map=status_map) # Pass map to HTML
+                           status_map=status_map)
 
 @app.route('/sw.js')
 def service_worker():
@@ -125,14 +132,18 @@ def add_task():
     raw_label = request.form.get('label')
     label = raw_label.strip().title() if raw_label else None 
 
+    context = request.form.get('context')
+
     if content:
+        # Add to Top logic (Negative numbers)
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
         new_pos = (min_pos - 1) if min_pos is not None else 0
         
         new_task = Task(
             content=content, position=new_pos, color=color,
             label=label, 
-            due_date=due_date if due_date else None
+            due_date=due_date if due_date else None,
+            context=context if context else None
         )
         db.session.add(new_task)
         db.session.commit()
@@ -153,17 +164,18 @@ def edit_task(id):
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
         
-        # --- NEW: Save Dependency ID ---
         req_id = request.form.get('requires_id')
         if req_id and req_id.isdigit():
             req_id_int = int(req_id)
-            # Validation: 1. Not self. 2. Task exists.
             if req_id_int != task.id and db.session.get(Task, req_id_int):
                 task.requires_id = req_id_int
             else:
-                task.requires_id = None # Invalid ID entered
+                task.requires_id = None
         else:
-            task.requires_id = None # Cleared or empty
+            task.requires_id = None
+
+        ctxt = request.form.get('context')
+        task.context = ctxt if ctxt else None
 
         if task.completed_at:
             note = request.form.get('completion_note')
@@ -188,48 +200,44 @@ def toggle_task(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-@app.route('/move/<int:id>/<direction>')
-def move_task(id, direction):
-    current = db.session.get(Task, id)
-    if not current or current.completed_at: return redirect(url_for('index'))
-    query = Task.query.filter(Task.completed_at.is_(None))
+# --- NEW: Reorder Route (AJAX) ---
+@app.route('/reorder', methods=['POST'])
+def reorder_tasks():
+    data = request.get_json()
+    new_order = data.get('order', []) # List of IDs e.g. [5, 2, 10]
     
-    if direction == 'up':
-        neighbor = query.filter(Task.position < current.position).order_by(Task.position.desc()).first()
-    else: 
-        neighbor = query.filter(Task.position > current.position).order_by(Task.position.asc()).first()
-
-    if neighbor:
-        current.position, neighbor.position = neighbor.position, current.position
-        db.session.commit()
-    return redirect(url_for('index'))
+    # We iterate through the ID list sent by the frontend
+    # and assign strictly increasing positions (0, 1, 2...)
+    for index, task_id in enumerate(new_order):
+        task = db.session.get(Task, task_id)
+        if task:
+            task.position = index
+            
+    db.session.commit()
+    return {'status': 'success'}
 
 @app.route('/delete/<int:id>')
 def delete_task(id):
     task = db.session.get(Task, id)
     if task:
-        # --- CASCADE UPDATE: Unlink dependents ---
         dependents = Task.query.filter_by(requires_id=task.id).all()
         for dep in dependents:
             dep.requires_id = None
-            
+        
         db.session.delete(task)
         db.session.commit()
     return redirect(url_for('index'))
 
 @app.route('/sweep')
 def sweep_completed():
-    # 1. Get IDs of tasks about to be deleted
     tasks_to_delete = db.session.query(Task).filter(Task.completed_at.isnot(None)).all()
     ids_to_delete = [t.id for t in tasks_to_delete]
 
     if ids_to_delete:
-        # 2. Unlink any active tasks that depend on these
         dependents = Task.query.filter(Task.requires_id.in_(ids_to_delete)).all()
         for dep in dependents:
             dep.requires_id = None
         
-        # 3. Delete
         for t in tasks_to_delete:
             db.session.delete(t)
             
@@ -238,20 +246,15 @@ def sweep_completed():
 
 # --- HELPER FUNCTIONS ---
 def perform_backup(src_path, backup_root):
-    """Creates a timestamped backup using SQLite's native backup API."""
     try:
         backup_dir = os.path.join(backup_root, 'backups')
         os.makedirs(backup_dir, exist_ok=True)
-        
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         dst_path = os.path.join(backup_dir, f"tasks_backup_{timestamp}.db")
-        
         src = sqlite3.connect(src_path)
         dst = sqlite3.connect(dst_path)
-        
         with dst:
             src.backup(dst)
-            
         dst.close()
         src.close()
         print(f"Database successfully backed up to: {dst_path}")
