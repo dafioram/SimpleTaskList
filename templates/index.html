@@ -81,7 +81,6 @@
             background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
             border-radius: 8px; display: flex; align-items: flex-start; gap: 12px;
             border-left: 6px solid #333; 
-            /* Essential for smooth dragging */
             touch-action: pan-y; 
         }
         
@@ -128,7 +127,6 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             background-color: #333; color: #ccc;
         }
-        /* Chip Colors... (omitted detailed list for brevity, same as before) */
         .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
         .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
         .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
@@ -147,7 +145,6 @@
         }
         .drag-handle:active { cursor: grabbing; color: #fff; }
         
-        /* Visual style for the item being dragged */
         .sortable-ghost { opacity: 0.2; background-color: #bb86fc; }
 
         .toggle-btn {
@@ -163,7 +160,7 @@
         .task-card.completed { opacity: 0.5; background-color: #181818; border-left-color: #222; }
         .task-card.completed .task-text { text-decoration: line-through; color: #888; }
         .task-card.completed .toggle-btn { background-color: #555; border-color: #555; color: #000; }
-        .task-card.completed .drag-handle { visibility: hidden; } /* Hide handle on completed tasks */
+        .task-card.completed .drag-handle { visibility: hidden; } 
         .task-card.completed .label-chip { background-color: #222; color: #555; }
     </style>
     <script>
@@ -183,22 +180,19 @@
         document.addEventListener('DOMContentLoaded', function() {
             var el = document.getElementById('task-list');
             var sortable = Sortable.create(el, {
-                handle: '.drag-handle', // Drag handle selector within list items
-                animation: 150, // Animation speed (ms)
-                ghostClass: 'sortable-ghost', // Class name for the drop placeholder
-                filter: '.completed', // Do not allow dragging completed items
+                handle: '.drag-handle', 
+                animation: 150, 
+                ghostClass: 'sortable-ghost', 
+                filter: '.completed', 
                 
                 onEnd: function (evt) {
-                    // 1. Get all task IDs in their new order
                     var itemOrder = [];
-                    // Select only active tasks to re-index
                     var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
                     
                     activeItems.forEach(function(item) {
                         itemOrder.push(item.getAttribute('data-id'));
                     });
 
-                    // 2. Send new order to backend
                     fetch('/reorder', {
                         method: 'POST',
                         headers: {
@@ -222,10 +216,10 @@
 
     {% if all_labels %}
     <div class="filter-bar">
-        <a href="/" class="filter-pill {{ 'active' if not active_filter }}">All</a>
-        {% for lbl in all_labels %}
+        <a href="/" class="filter-pill {{ 'active' if not active_filter }}">All ({{ total_active }})</a>
+        {% for lbl, count in all_labels %}
         <a href="/?label={{ lbl }}" class="filter-pill {{ 'active' if active_filter == lbl }}">
-            {{ lbl }}
+            {{ lbl }} ({{ count }})
         </a>
         {% endfor %}
     </div>

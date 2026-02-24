@@ -87,6 +87,16 @@ def index():
     all_tasks_raw = Task.query.all()
     status_map = {t.id: (t.completed_at is not None) for t in all_tasks_raw}
 
+    # NEW: Calculate active task counts per label, and total active tasks
+    label_counts = {}
+    total_active = 0
+    
+    for t in all_tasks_raw:
+        if t.completed_at is None:
+            total_active += 1
+            if t.label:
+                label_counts[t.label] = label_counts.get(t.label, 0) + 1
+
     filter_label = request.args.get('label')
     query = Task.query
     if filter_label:
@@ -99,7 +109,8 @@ def index():
         .filter(Task.label != "")\
         .distinct().all()
     
-    all_labels = sorted([l[0] for l in unique_labels_query])
+    # Format as list of tuples: [('Trip', 2), ('Work', 0)]
+    all_labels = [(l[0], label_counts.get(l[0], 0)) for l in sorted(unique_labels_query)]
 
     # Sort logic is critical here for initial render
     active_tasks = sorted(
@@ -117,7 +128,8 @@ def index():
                            tasks=active_tasks + finished_tasks, 
                            all_labels=all_labels, 
                            active_filter=filter_label,
-                           status_map=status_map)
+                           status_map=status_map,
+                           total_active=total_active) # Pass total count to template
 
 @app.route('/sw.js')
 def service_worker():
