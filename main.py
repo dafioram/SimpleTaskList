@@ -34,6 +34,7 @@ class Task(db.Model):
     
     # Metadata
     label = db.Column(db.String(50), nullable=True) 
+    assignee = db.Column(db.String(50), nullable=True)
     due_date = db.Column(db.String(20), nullable=True)
     completion_note = db.Column(db.Text, nullable=True)
     
@@ -79,6 +80,8 @@ with app.app_context():
         except: pass
         try: conn.execute(text("ALTER TABLE task ADD COLUMN context TEXT"))
         except: pass
+        try: conn.execute(text("ALTER TABLE task ADD COLUMN assignee VARCHAR(50)"))
+        except: pass
 
 # --- ROUTES ---
 
@@ -87,8 +90,12 @@ def index():
     all_tasks_raw = Task.query.all()
     status_map = {t.id: (t.completed_at is not None) for t in all_tasks_raw}
 
-    # NEW: Calculate active task counts per label, and total active tasks
+    filter_label = request.args.get('label')
+    filter_assignee = request.args.get('assignee')
+
     label_counts = {}
+    assignee_counts = {}
+    unique_assignees = set()
     total_active = 0
     
     for t in all_tasks_raw:
@@ -96,40 +103,50 @@ def index():
             total_active += 1
             if t.label:
                 label_counts[t.label] = label_counts.get(t.label, 0) + 1
+            
+            assgn_key = t.assignee if t.assignee else "Unassigned"
+            assignee_counts[assgn_key] = assignee_counts.get(assgn_key, 0) + 1
+            
+        if t.assignee:
+            unique_assignees.add(t.assignee)
 
-    filter_label = request.args.get('label')
     query = Task.query
     if filter_label:
         query = query.filter(Task.label == filter_label)
         
+    if filter_assignee:
+        if filter_assignee == 'Unassigned':
+            query = query.filter((Task.assignee == None) | (Task.assignee == ''))
+        else:
+            query = query.filter(Task.assignee == filter_assignee)
+        
     tasks = query.all()
     
-    unique_labels_query = db.session.query(Task.label)\
-        .filter(Task.label.isnot(None))\
-        .filter(Task.label != "")\
-        .distinct().all()
+    unique_labels_query = db.session.query(Task.label).filter(Task.label.isnot(None)).filter(Task.label != "").distinct().all()
     
-    # Format as list of tuples: [('Trip', 2), ('Work', 0)]
     all_labels = [(l[0], label_counts.get(l[0], 0)) for l in sorted(unique_labels_query)]
+    all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
+    unassigned_count = assignee_counts.get("Unassigned", 0)
 
-    # Sort logic is critical here for initial render
-    active_tasks = sorted(
-        [t for t in tasks if t.completed_at is None], 
-        key=lambda t: t.position
-    )
+    PALETTE = ['#d0bcff', '#448aff', '#69f0ae', '#ffab40', '#ff5252', '#ff80ab', '#64ffda', '#536dfe', '#f44336', '#e91e63', '#9c27b0', '#00bcd4', '#4caf50', '#ff9800']
+    assignee_colors = {}
+    for a in unique_assignees:
+        hash_val = sum(ord(c) for c in a)
+        assignee_colors[a] = PALETTE[hash_val % len(PALETTE)]
 
-    finished_tasks = sorted(
-        [t for t in tasks if t.completed_at is not None],
-        key=lambda t: t.completed_at,
-        reverse=True
-    )
+    active_tasks = sorted([t for t in tasks if t.completed_at is None], key=lambda t: t.position)
+    finished_tasks = sorted([t for t in tasks if t.completed_at is not None], key=lambda t: t.completed_at, reverse=True)
 
     return render_template('index.html', 
                            tasks=active_tasks + finished_tasks, 
                            all_labels=all_labels, 
+                           all_assignees=all_assignees,
+                           assignee_colors=assignee_colors,
+                           unassigned_count=unassigned_count,
                            active_filter=filter_label,
+                           active_assignee=filter_assignee,
                            status_map=status_map,
-                           total_active=total_active) # Pass total count to template
+                           total_active=total_active)
 
 @app.route('/sw.js')
 def service_worker():
@@ -138,25 +155,14 @@ def service_worker():
 @app.route('/add', methods=['POST'])
 def add_task():
     content = request.form.get('content')
-    color = request.form.get('color', 'default')
-    due_date = request.form.get('due_date')
-    
     raw_label = request.form.get('label')
     label = raw_label.strip().title() if raw_label else None 
 
-    context = request.form.get('context')
-
     if content:
-        # Add to Top logic (Negative numbers)
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
         new_pos = (min_pos - 1) if min_pos is not None else 0
         
-        new_task = Task(
-            content=content, position=new_pos, color=color,
-            label=label, 
-            due_date=due_date if due_date else None,
-            context=context if context else None
-        )
+        new_task = Task(content=content, position=new_pos, color='default', label=label)
         db.session.add(new_task)
         db.session.commit()
     return redirect(url_for('index'))
@@ -173,6 +179,9 @@ def edit_task(id):
         raw_label = request.form.get('label')
         task.label = raw_label.strip().title() if raw_label else None
         
+        raw_assignee = request.form.get('assignee')
+        task.assignee = raw_assignee.strip().title() if raw_assignee else None
+
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
         
@@ -196,7 +205,39 @@ def edit_task(id):
         db.session.commit()
         return redirect(url_for('index'))
 
-    return render_template('edit.html', task=task)
+    # NEW: Fetching metadata to build the background filters and datalists on the edit screen
+    all_tasks_raw = Task.query.all()
+    label_counts = {}
+    assignee_counts = {}
+    unique_assignees = set()
+    
+    for t in all_tasks_raw:
+        if t.completed_at is None:
+            if t.label:
+                label_counts[t.label] = label_counts.get(t.label, 0) + 1
+            assgn_key = t.assignee if t.assignee else "Unassigned"
+            assignee_counts[assgn_key] = assignee_counts.get(assgn_key, 0) + 1
+        if t.assignee:
+            unique_assignees.add(t.assignee)
+
+    unique_labels_query = db.session.query(Task.label).filter(Task.label.isnot(None)).filter(Task.label != "").distinct().all()
+    all_labels = [(l[0], label_counts.get(l[0], 0)) for l in sorted(unique_labels_query)]
+    all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
+    unassigned_count = assignee_counts.get("Unassigned", 0)
+
+    PALETTE = ['#d0bcff', '#448aff', '#69f0ae', '#ffab40', '#ff5252', '#ff80ab', '#64ffda', '#536dfe', '#f44336', '#e91e63', '#9c27b0', '#00bcd4', '#4caf50', '#ff9800']
+    assignee_colors = {}
+    for a in unique_assignees:
+        hash_val = sum(ord(c) for c in a)
+        assignee_colors[a] = PALETTE[hash_val % len(PALETTE)]
+
+    return render_template('edit.html', 
+                           task=task, 
+                           all_labels=all_labels,
+                           all_assignees=all_assignees,
+                           unassigned_count=unassigned_count,
+                           unique_assignees=sorted(list(unique_assignees)),
+                           assignee_colors=assignee_colors)
 
 @app.route('/toggle/<int:id>')
 def toggle_task(id):
@@ -212,19 +253,13 @@ def toggle_task(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-# --- NEW: Reorder Route (AJAX) ---
 @app.route('/reorder', methods=['POST'])
 def reorder_tasks():
     data = request.get_json()
-    new_order = data.get('order', []) # List of IDs e.g. [5, 2, 10]
-    
-    # We iterate through the ID list sent by the frontend
-    # and assign strictly increasing positions (0, 1, 2...)
+    new_order = data.get('order', []) 
     for index, task_id in enumerate(new_order):
         task = db.session.get(Task, task_id)
-        if task:
-            task.position = index
-            
+        if task: task.position = index
     db.session.commit()
     return {'status': 'success'}
 
@@ -233,9 +268,7 @@ def delete_task(id):
     task = db.session.get(Task, id)
     if task:
         dependents = Task.query.filter_by(requires_id=task.id).all()
-        for dep in dependents:
-            dep.requires_id = None
-        
+        for dep in dependents: dep.requires_id = None
         db.session.delete(task)
         db.session.commit()
     return redirect(url_for('index'))
@@ -244,19 +277,13 @@ def delete_task(id):
 def sweep_completed():
     tasks_to_delete = db.session.query(Task).filter(Task.completed_at.isnot(None)).all()
     ids_to_delete = [t.id for t in tasks_to_delete]
-
     if ids_to_delete:
         dependents = Task.query.filter(Task.requires_id.in_(ids_to_delete)).all()
-        for dep in dependents:
-            dep.requires_id = None
-        
-        for t in tasks_to_delete:
-            db.session.delete(t)
-            
+        for dep in dependents: dep.requires_id = None
+        for t in tasks_to_delete: db.session.delete(t)
         db.session.commit()
     return redirect(url_for('index'))
 
-# --- HELPER FUNCTIONS ---
 def perform_backup(src_path, backup_root):
     try:
         backup_dir = os.path.join(backup_root, 'backups')
@@ -265,18 +292,14 @@ def perform_backup(src_path, backup_root):
         dst_path = os.path.join(backup_dir, f"tasks_backup_{timestamp}.db")
         src = sqlite3.connect(src_path)
         dst = sqlite3.connect(dst_path)
-        with dst:
-            src.backup(dst)
-        dst.close()
-        src.close()
-        print(f"Database successfully backed up to: {dst_path}")
+        with dst: src.backup(dst)
+        dst.close(); src.close()
     except Exception as e:
-        print(f"Backup failed: {e}")
+        pass
 
 if __name__ == '__main__':
     if not os.environ.get("WERKZEUG_RUN_MAIN"):
         if os.path.exists(db_path):
             perform_backup(db_path, data_dir)
-
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
