@@ -304,24 +304,20 @@ def api_health():
 
 @app.route('/api/backup', methods=['POST'])
 def api_backup():
-    expected_api_key = os.environ.get('BACKUP_API_KEY')
+    expected_api_key = os.environ.get('API_BACKUP_KEY')
     
-    # Fail completely if no key is configured on the server
     if not expected_api_key:
         return jsonify({"status": "error", "message": "Backup API key not configured on server."}), 403
         
-    # Check the incoming request for the key
-    provided_key = request.headers.get('X-API-Key')
+    provided_key = request.headers.get('X-Backup-Key')
     if not provided_key or provided_key != expected_api_key:
-        return jsonify({"status": "error", "message": "Unauthorized: Invalid or missing API key."}), 401
+        return jsonify({"status": "error", "message": "Unauthorized: Invalid or missing Backup key."}), 401
 
-    # Proceed if the key matches perfectly
     success, result = perform_backup(db_path, data_dir)
     if success:
         return jsonify({"status": "success", "message": "Database backup completed.", "file": result}), 200
     else:
         return jsonify({"status": "error", "message": "Backup failed.", "error_details": result}), 500
-
 
 # --- HELPER FUNCTIONS ---
 
