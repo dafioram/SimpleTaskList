@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -205,7 +205,6 @@ def edit_task(id):
         db.session.commit()
         return redirect(url_for('index'))
 
-    # NEW: Fetching metadata to build the background filters and datalists on the edit screen
     all_tasks_raw = Task.query.all()
     label_counts = {}
     assignee_counts = {}
@@ -284,18 +283,65 @@ def sweep_completed():
         db.session.commit()
     return redirect(url_for('index'))
 
+# --- API ENDPOINTS ---
+
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    health_status = {
+        "status": "healthy",
+        "database": "unknown",
+        "timestamp": datetime.datetime.now().isoformat()
+    }
+    try:
+        db.session.execute(text('SELECT 1'))
+        health_status["database"] = "connected"
+        return jsonify(health_status), 200
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["database"] = "error"
+        health_status["error_details"] = str(e)
+        return jsonify(health_status), 500
+
+@app.route('/api/backup', methods=['POST'])
+def api_backup():
+    expected_api_key = os.environ.get('BACKUP_API_KEY')
+    
+    # Fail completely if no key is configured on the server
+    if not expected_api_key:
+        return jsonify({"status": "error", "message": "Backup API key not configured on server."}), 403
+        
+    # Check the incoming request for the key
+    provided_key = request.headers.get('X-API-Key')
+    if not provided_key or provided_key != expected_api_key:
+        return jsonify({"status": "error", "message": "Unauthorized: Invalid or missing API key."}), 401
+
+    # Proceed if the key matches perfectly
+    success, result = perform_backup(db_path, data_dir)
+    if success:
+        return jsonify({"status": "success", "message": "Database backup completed.", "file": result}), 200
+    else:
+        return jsonify({"status": "error", "message": "Backup failed.", "error_details": result}), 500
+
+
+# --- HELPER FUNCTIONS ---
+
 def perform_backup(src_path, backup_root):
     try:
         backup_dir = os.path.join(backup_root, 'backups')
         os.makedirs(backup_dir, exist_ok=True)
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         dst_path = os.path.join(backup_dir, f"tasks_backup_{timestamp}.db")
+        
         src = sqlite3.connect(src_path)
         dst = sqlite3.connect(dst_path)
-        with dst: src.backup(dst)
-        dst.close(); src.close()
+        with dst: 
+            src.backup(dst)
+        dst.close()
+        src.close()
+        
+        return True, dst_path
     except Exception as e:
-        pass
+        return False, str(e)
 
 if __name__ == '__main__':
     if not os.environ.get("WERKZEUG_RUN_MAIN"):

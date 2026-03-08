@@ -305,6 +305,7 @@
                     
                     <div class="context-meta-line">
                         Created: {{ task.created_at.strftime('%b %d, %Y') }}<br>
+                        Due: {% if task.due_date %}{{ task.due_date }}{% else %}N/A{% endif %}<br>
                         Assignee: {% if task.assignee %}{{ task.assignee }}{% else %}Unassigned{% endif %}
                     </div>
                 </div>
