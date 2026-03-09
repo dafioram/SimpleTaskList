@@ -165,12 +165,17 @@
         function toggleContext(id) {
             const contextDiv = document.getElementById('context-' + id);
             const btn = document.getElementById('btn-ctx-' + id);
+            
+            // Check if the memo emoji is currently in the button text
+            const hasMemo = btn.innerHTML.includes('📝');
+            const memoSuffix = hasMemo ? ' 📝' : '';
+            
             if (contextDiv.style.display === 'block') {
                 contextDiv.style.display = 'none';
-                btn.innerHTML = '▼ Details';
+                btn.innerHTML = '▼ Details' + memoSuffix;
             } else {
                 contextDiv.style.display = 'block';
-                btn.innerHTML = '▲ Details';
+                btn.innerHTML = '▲ Details' + memoSuffix;
             }
         }
 
@@ -298,7 +303,7 @@
                     {% endif %}
                 </div>
 
-                <button id="btn-ctx-{{ task.id }}" class="context-toggle" onclick="toggleContext({{ task.id }})">▼ Details</button>
+                <button id="btn-ctx-{{ task.id }}" class="context-toggle" onclick="toggleContext({{ task.id }})">▼ Details{% if task.context %} 📝{% endif %}</button>
                 
                 <div id="context-{{ task.id }}" class="task-context">
                     <div style="white-space: pre-wrap; word-break: break-word;">{% if task.context %}{{ task.context }}{% else %}<span style="font-style: italic; opacity: 0.5;">No additional context.</span>{% endif %}</div>
