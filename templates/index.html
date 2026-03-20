@@ -83,6 +83,20 @@
             font-size: 0.75rem; color: #666; flex-wrap: wrap;
         }
 
+        /* NEW: Info Toggle Button */
+        .info-toggle {
+            background: none; border: none; color: #888; font-size: 1rem; cursor: pointer;
+            padding: 0 4px; margin: 0; transition: color 0.2s; display: inline-flex; align-items: center;
+        }
+        .info-toggle:hover { color: #bb86fc; }
+
+        /* NEW: System Info Box (Created, Due, Assignee) */
+        .task-info {
+            display: none; font-size: 0.8rem; color: #888; margin-top: 8px; 
+            padding: 8px 10px; border-radius: 6px; background: #252525;
+            font-family: monospace; line-height: 1.4;
+        }
+
         .context-toggle {
             background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer;
             padding: 0; margin-top: 8px; transition: color 0.2s; display: inline-flex; align-items: center; font-weight: bold;
@@ -93,9 +107,6 @@
             display: none; margin-top: 8px; font-size: 0.95rem; color: #bbb;
             background: #252525; padding: 10px; border-radius: 6px;
             border-left: 2px solid #555;
-        }
-        .context-meta-line {
-            display: block; font-size: 0.8rem; color: #888; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #444; font-family: monospace; white-space: normal;
         }
         
         .completion-note {
@@ -162,20 +173,27 @@
         .task-card.completed .avatar-top-right { opacity: 0.3; }
     </style>
     <script>
+        // Toggles User Notes
         function toggleContext(id) {
             const contextDiv = document.getElementById('context-' + id);
             const btn = document.getElementById('btn-ctx-' + id);
             
-            // Check if the memo emoji is currently in the button text
-            const hasMemo = btn.innerHTML.includes('📝');
-            const memoSuffix = hasMemo ? ' 📝' : '';
-            
             if (contextDiv.style.display === 'block') {
                 contextDiv.style.display = 'none';
-                btn.innerHTML = '▼ Details' + memoSuffix;
+                btn.innerHTML = '▼ Details 📝';
             } else {
                 contextDiv.style.display = 'block';
-                btn.innerHTML = '▲ Details' + memoSuffix;
+                btn.innerHTML = '▲ Details 📝';
+            }
+        }
+
+        // NEW: Toggles System Metadata
+        function toggleInfo(id) {
+            const infoDiv = document.getElementById('info-' + id);
+            if (infoDiv.style.display === 'block') {
+                infoDiv.style.display = 'none';
+            } else {
+                infoDiv.style.display = 'block';
             }
         }
 
@@ -281,6 +299,8 @@
                 <div class="task-meta">
                     <span style="font-family: monospace; color: #555;">#{{ task.id }}</span>
                     
+                    <button id="btn-info-{{ task.id }}" class="info-toggle" onclick="toggleInfo({{ task.id }})" title="Task Metadata">ⓘ</button>
+                    
                     {% if task.requires_id %}
                         {% if status_map.get(task.requires_id) %}
                             <span class="dep-done">• Requires: #{{ task.requires_id }}</span>
@@ -303,17 +323,19 @@
                     {% endif %}
                 </div>
 
-                <button id="btn-ctx-{{ task.id }}" class="context-toggle" onclick="toggleContext({{ task.id }})">▼ Details{% if task.context %} 📝{% endif %}</button>
-                
-                <div id="context-{{ task.id }}" class="task-context">
-                    <div style="white-space: pre-wrap; word-break: break-word;">{% if task.context %}{{ task.context }}{% else %}<span style="font-style: italic; opacity: 0.5;">No additional context.</span>{% endif %}</div>
-                    
-                    <div class="context-meta-line">
-                        Created: {{ task.created_at.strftime('%b %d, %Y') }}<br>
-                        Due: {% if task.due_date %}{{ task.due_date }}{% else %}N/A{% endif %}<br>
-                        Assignee: {% if task.assignee %}{{ task.assignee }}{% else %}Unassigned{% endif %}
-                    </div>
+                <div id="info-{{ task.id }}" class="task-info">
+                    Created: {{ task.created_at.strftime('%b %d, %Y') }}<br>
+                    Due: {% if task.due_date %}{{ task.due_date }}{% else %}N/A{% endif %}<br>
+                    Assignee: {% if task.assignee %}{{ task.assignee }}{% else %}Unassigned{% endif %}
                 </div>
+
+                {% if task.context %}
+                    <button id="btn-ctx-{{ task.id }}" class="context-toggle" onclick="toggleContext({{ task.id }})">▼ Details 📝</button>
+                    
+                    <div id="context-{{ task.id }}" class="task-context">
+                        <div style="white-space: pre-wrap; word-break: break-word;">{{ task.context }}</div>
+                    </div>
+                {% endif %}
 
                 {% if task.completion_note %}
                     <div class="completion-note">“{{ task.completion_note }}”</div>
