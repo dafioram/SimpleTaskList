@@ -83,14 +83,12 @@
             font-size: 0.75rem; color: #666; flex-wrap: wrap;
         }
 
-        /* NEW: Info Toggle Button */
         .info-toggle {
             background: none; border: none; color: #888; font-size: 1rem; cursor: pointer;
             padding: 0 4px; margin: 0; transition: color 0.2s; display: inline-flex; align-items: center;
         }
         .info-toggle:hover { color: #bb86fc; }
 
-        /* NEW: System Info Box (Created, Due, Assignee) */
         .task-info {
             display: none; font-size: 0.8rem; color: #888; margin-top: 8px; 
             padding: 8px 10px; border-radius: 6px; background: #252525;
@@ -132,10 +130,11 @@
         .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
         .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
 
+        /* CHANGED: Added align-self: stretch to expand the invisible touch target vertically */
         .drag-handle { 
-            cursor: grab; color: #555; font-size: 20px; line-height: 1; padding: 5px; 
+            cursor: grab; color: #555; font-size: 20px; line-height: 1; padding: 0 5px; 
             display: flex; align-items: center; justify-content: center;
-            margin-right: 5px; user-select: none;
+            margin-right: 5px; user-select: none; align-self: stretch;
         }
         .drag-handle:active { cursor: grabbing; color: #fff; }
         .sortable-ghost { opacity: 0.2; background-color: #bb86fc; }
@@ -173,7 +172,6 @@
         .task-card.completed .avatar-top-right { opacity: 0.3; }
     </style>
     <script>
-        // Toggles User Notes
         function toggleContext(id) {
             const contextDiv = document.getElementById('context-' + id);
             const btn = document.getElementById('btn-ctx-' + id);
@@ -187,7 +185,6 @@
             }
         }
 
-        // NEW: Toggles System Metadata
         function toggleInfo(id) {
             const infoDiv = document.getElementById('info-' + id);
             if (infoDiv.style.display === 'block') {
