@@ -44,6 +44,17 @@ def get_assignee_colors(unique_assignees):
         colors[a] = PALETTE[hash_val % len(PALETTE)]
     return colors
 
+def get_label_colors(unique_labels):
+    """Generates consistent CSS classes for labels using a salted hash."""
+    LABEL_PALETTE = ['purple', 'blue', 'green', 'orange', 'red', 'pink', 'teal', 'yellow', 'indigo']
+    colors = {}
+    for lbl in unique_labels:
+        if not lbl: continue
+        # Multiplying by 17 ensures "Maggie" the label is a different color than "Maggie" the assignee
+        hash_val = sum(ord(c) * (i + 1) * 17 for i, c in enumerate(lbl))
+        colors[lbl] = LABEL_PALETTE[hash_val % len(LABEL_PALETTE)]
+    return colors
+
 # --- ROUTES ---
 
 @app.route('/')
@@ -84,13 +95,15 @@ def index():
     tasks = query.all()
     
     unique_labels_query = db.session.query(Task.label).filter(Task.label.isnot(None)).filter(Task.label != "").distinct().all()
+    unique_labels_list = [l[0] for l in sorted(unique_labels_query)]
     
-    all_labels = [(l[0], label_counts.get(l[0], 0)) for l in sorted(unique_labels_query)]
+    all_labels = [(lbl, label_counts.get(lbl, 0)) for lbl in unique_labels_list]
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
     unassigned_count = assignee_counts.get("Unassigned", 0)
 
-    # Use the shared helper function
+    # Use the shared helper functions
     assignee_colors = get_assignee_colors(unique_assignees)
+    label_colors = get_label_colors(unique_labels_list)
 
     active_tasks = sorted([t for t in tasks if t.completed_at is None], key=lambda t: t.position)
     finished_tasks = sorted([t for t in tasks if t.completed_at is not None], key=lambda t: t.completed_at, reverse=True)
@@ -100,6 +113,7 @@ def index():
                            all_labels=all_labels, 
                            all_assignees=all_assignees,
                            assignee_colors=assignee_colors,
+                           label_colors=label_colors,
                            unassigned_count=unassigned_count,
                            active_filter=filter_label,
                            active_assignee=filter_assignee,
@@ -120,6 +134,7 @@ def add_task():
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
         new_pos = (min_pos - 1) if min_pos is not None else 0
         
+        # Color column is permanently set to 'default' in DB, we ignore it going forward
         new_task = Task(content=content, position=new_pos, color='default', label=label)
         db.session.add(new_task)
         db.session.commit()
@@ -132,7 +147,6 @@ def edit_task(id):
 
     if request.method == 'POST':
         task.content = request.form.get('content')
-        task.color = request.form.get('color')
         
         raw_label = request.form.get('label')
         task.label = raw_label.strip().title() if raw_label else None
@@ -178,11 +192,13 @@ def edit_task(id):
             unique_assignees.add(t.assignee)
 
     unique_labels_query = db.session.query(Task.label).filter(Task.label.isnot(None)).filter(Task.label != "").distinct().all()
-    all_labels = [(l[0], label_counts.get(l[0], 0)) for l in sorted(unique_labels_query)]
+    unique_labels_list = [l[0] for l in sorted(unique_labels_query)]
+    
+    all_labels = [(lbl, label_counts.get(lbl, 0)) for lbl in unique_labels_list]
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
     unassigned_count = assignee_counts.get("Unassigned", 0)
 
-    # Use the shared helper function
+    # Use the shared helper functions
     assignee_colors = get_assignee_colors(unique_assignees)
 
     return render_template('edit.html', 

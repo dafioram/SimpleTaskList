@@ -130,7 +130,6 @@
         .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
         .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
 
-        /* CHANGED: Added align-self: stretch to expand the invisible touch target vertically */
         .drag-handle { 
             cursor: grab; color: #555; font-size: 20px; line-height: 1; padding: 0 5px; 
             display: flex; align-items: center; justify-content: center;
@@ -230,7 +229,8 @@
     </script>
 </head>
 <body>
-<div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
         
         {% if all_labels %}
         <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
@@ -270,6 +270,7 @@
         {% endif %}
         
     </div>
+
     <div class="add-container">
         <form action="/add" method="POST">
             <div class="form-row-main">
@@ -290,7 +291,7 @@
 
     <div id="task-list">
         {% for task in tasks %}
-        <div class="task-card border-{{ task.color }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
+        <div class="task-card border-{{ label_colors.get(task.label, 'default') }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
             
             <div class="drag-handle">⋮⋮</div>
 
@@ -315,7 +316,7 @@
                     {% endif %}
 
                     {% if task.label %}
-                        <a href="/?label={{ task.label }}" class="label-chip chip-{{ task.color }}">{{ task.label }}</a>
+                        <a href="/?label={{ task.label }}" class="label-chip chip-{{ label_colors.get(task.label, 'default') }}">{{ task.label }}</a>
                     {% endif %}
 
                     {% if task.completed_at %}
