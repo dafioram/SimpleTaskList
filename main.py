@@ -27,6 +27,23 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize the database and run migrations
 init_db(app)
 
+# --- HELPER FUNCTIONS ---
+
+def get_assignee_colors(unique_assignees):
+    """Generates consistent colors for assignees using a hash."""
+    PALETTE = [
+        '#d0bcff', '#448aff', '#69f0ae', '#ffab40', '#ff5252', 
+        '#ff80ab', '#64ffda', '#536dfe', '#f44336', '#e91e63', 
+        '#9c27b0', '#00bcd4', '#4caf50', '#ff9800', '#cddc39', 
+        '#8bc34a', '#03a9f4', '#009688', '#b388ff', '#8c9eff', 
+        '#80d8ff', '#a7ffeb', '#ccff90', '#ffe57f', '#ff9e80'
+    ]
+    colors = {}
+    for a in unique_assignees:
+        hash_val = sum(ord(c) * (i + 1) * 31 for i, c in enumerate(a))
+        colors[a] = PALETTE[hash_val % len(PALETTE)]
+    return colors
+
 # --- ROUTES ---
 
 @app.route('/')
@@ -72,11 +89,8 @@ def index():
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
     unassigned_count = assignee_counts.get("Unassigned", 0)
 
-    PALETTE = ['#d0bcff', '#448aff', '#69f0ae', '#ffab40', '#ff5252', '#ff80ab', '#64ffda', '#536dfe', '#f44336', '#e91e63', '#9c27b0', '#00bcd4', '#4caf50', '#ff9800']
-    assignee_colors = {}
-    for a in unique_assignees:
-        hash_val = sum(ord(c) for c in a)
-        assignee_colors[a] = PALETTE[hash_val % len(PALETTE)]
+    # Use the shared helper function
+    assignee_colors = get_assignee_colors(unique_assignees)
 
     active_tasks = sorted([t for t in tasks if t.completed_at is None], key=lambda t: t.position)
     finished_tasks = sorted([t for t in tasks if t.completed_at is not None], key=lambda t: t.completed_at, reverse=True)
@@ -168,11 +182,8 @@ def edit_task(id):
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
     unassigned_count = assignee_counts.get("Unassigned", 0)
 
-    PALETTE = ['#d0bcff', '#448aff', '#69f0ae', '#ffab40', '#ff5252', '#ff80ab', '#64ffda', '#536dfe', '#f44336', '#e91e63', '#9c27b0', '#00bcd4', '#4caf50', '#ff9800']
-    assignee_colors = {}
-    for a in unique_assignees:
-        hash_val = sum(ord(c) for c in a)
-        assignee_colors[a] = PALETTE[hash_val % len(PALETTE)]
+    # Use the shared helper function
+    assignee_colors = get_assignee_colors(unique_assignees)
 
     return render_template('edit.html', 
                            task=task, 
