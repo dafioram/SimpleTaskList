@@ -42,12 +42,22 @@
         
         h2 { margin-top: 0; margin-bottom: 0; color: #bb86fc; }
         
-        input[type="text"], input[type="number"], textarea {
-            width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333;
-            font-size: 16px; background: #2c2c2c; color: white; outline: none;
-            box-sizing: border-box; margin-bottom: 0; 
-            font-family: inherit;
-        }
+		input[type="text"], 
+		input[type="number"], 
+		textarea,
+		select {
+			width: 100%;
+			padding: 15px;
+			border-radius: 8px;
+			border: 1px solid #333;
+			font-size: 16px;
+			background: #2c2c2c;
+			color: white;
+			outline: none;
+			box-sizing: border-box;
+			margin-bottom: 0;
+			font-family: inherit;
+		}
         
         .main-input { margin-bottom: 10px !important; }
 
@@ -139,10 +149,21 @@
                     <input type="date" name="due_date" class="small-input" value="{{ task.due_date or '' }}">
                 </div>
 
-                <div style="margin-top: 15px;">
-                    <label style="display:block; margin-bottom:5px; color:#666; font-size:0.8rem;">Requires Task ID (Optional):</label>
-                    <input type="number" name="requires_id" class="small-input" style="width: 100%;" placeholder="e.g. 15" value="{{ task.requires_id or '' }}">
-                </div>
+				<div style="margin-top: 15px;">
+					<label style="display:block; margin-bottom:5px; color:#666; font-size:0.8rem;">
+						Parent Task (Optional):
+					</label>
+					<select name="parent_id" class="small-input" style="width: 100%;">
+						<option value="">No Parent</option>
+						{% for t in all_tasks %}
+							{% if t.id != task.id %}
+								<option value="{{ t.id }}" {% if task.parent_id == t.id %}selected{% endif %}>
+									#{{ t.id }} — {{ t.content[:40] }}
+								</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+				</div>
 
                 {% if task.completed_at %}
                 <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">

@@ -169,6 +169,35 @@
         .task-card.completed .drag-handle { visibility: hidden; } 
         .task-card.completed .label-chip { background-color: #222; color: #555; }
         .task-card.completed .avatar-top-right { opacity: 0.3; }
+		
+		.strike-high {
+			text-decoration: line-through;
+			text-decoration-thickness: 2px;
+			text-decoration-color: currentColor;
+			text-decoration-skip-ink: none;
+			
+			/* This is the key line */
+			text-decoration-position: from-font; /* fallback */
+		}
+		
+.diag-slash {
+    position: relative;
+    display: inline-block;
+}
+
+.diag-slash::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 50%;
+    height: 2px;
+    background-color: currentColor;
+    transform: rotate(-25deg);
+    transform-origin: center;
+    pointer-events: none;
+}
+		
     </style>
     <script>
         function toggleContext(id) {
@@ -307,13 +336,39 @@
                     
                     <button id="btn-info-{{ task.id }}" class="info-toggle" onclick="toggleInfo({{ task.id }})" title="Task Metadata">ⓘ</button>
                     
-                    {% if task.requires_id %}
-                        {% if status_map.get(task.requires_id) %}
-                            <span class="dep-done">• Requires: #{{ task.requires_id }}</span>
-                        {% else %}
-                            <span class="dep-active">• Requires: #{{ task.requires_id }}</span>
-                        {% endif %}
-                    {% endif %}
+{% if children_map.get(task.id) %}
+    {% set children = children_map[task.id] | sort(attribute='id') %}
+    {% set all_done = children | selectattr('completed_at') | list | length == children | length %}
+
+    {% set ids = [] %}
+    {% for child in children %}
+
+        {% if all_done %}
+            {# Everything complete → full strike #}
+            {% set _ = ids.append(
+                '<span class="strike-high">#' ~ child.id ~ '</span>'
+            ) %}
+
+        {% else %}
+            {% if child.completed_at %}
+                {# Partial complete → diagonal slash #}
+                {% set _ = ids.append(
+                    '<span class="diag-slash">#' ~ child.id ~ '</span>'
+                ) %}
+            {% else %}
+                {% set _ = ids.append('#' ~ child.id) %}
+            {% endif %}
+        {% endif %}
+
+    {% endfor %}
+
+    <span class="{{ 'dep-done' if all_done else 'dep-active' }}">
+        • <span class="{% if all_done %}strike-high{% endif %}">
+            Requires:
+        </span>
+        {{ ids | join(', ') | safe }}
+    </span>
+{% endif %}
 
                     {% if task.label %}
                         <a href="/?label={{ task.label }}" class="label-chip chip-{{ label_colors.get(task.label, 'default') }}">{{ task.label }}</a>

@@ -60,7 +60,14 @@ def get_label_colors(unique_labels):
 @app.route('/')
 def index():
     all_tasks_raw = Task.query.all()
-    status_map = {t.id: (t.completed_at is not None) for t in all_tasks_raw}
+    
+    # Build a map of parent_id -> list of child tasks for the UI
+    children_map = {}
+    for t in all_tasks_raw:
+        if t.parent_id:
+            if t.parent_id not in children_map:
+                children_map[t.parent_id] = []
+            children_map[t.parent_id].append(t)
 
     filter_label = request.args.get('label')
     filter_assignee = request.args.get('assignee')
@@ -117,7 +124,7 @@ def index():
                            unassigned_count=unassigned_count,
                            active_filter=filter_label,
                            active_assignee=filter_assignee,
-                           status_map=status_map,
+                           children_map=children_map,
                            total_active=total_active)
 
 @app.route('/sw.js')
@@ -157,15 +164,30 @@ def edit_task(id):
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
         
-        req_id = request.form.get('requires_id')
-        if req_id and req_id.isdigit():
-            req_id_int = int(req_id)
-            if req_id_int != task.id and db.session.get(Task, req_id_int):
-                task.requires_id = req_id_int
+        # --- PARENT ID / INFINITE LOOP PREVENTION ---
+        parent_id_raw = request.form.get('parent_id')
+        if parent_id_raw and parent_id_raw.isdigit():
+            pid_int = int(parent_id_raw)
+            parent_task = db.session.get(Task, pid_int)
+            
+            if parent_task and pid_int != task.id:
+                # Walk up the tree to ensure we don't create a circular dependency
+                circular = False
+                curr = parent_task
+                while curr:
+                    if curr.id == task.id:
+                        circular = True
+                        break
+                    curr = db.session.get(Task, curr.parent_id) if curr.parent_id else None
+                
+                if not circular:
+                    task.parent_id = pid_int
+                else:
+                    task.parent_id = None
             else:
-                task.requires_id = None
+                task.parent_id = None
         else:
-            task.requires_id = None
+            task.parent_id = None
 
         ctxt = request.form.get('context')
         task.context = ctxt if ctxt else None
@@ -202,7 +224,8 @@ def edit_task(id):
     assignee_colors = get_assignee_colors(unique_assignees)
 
     return render_template('edit.html', 
-                           task=task, 
+                           task=task,
+                           all_tasks=all_tasks_raw,
                            all_labels=all_labels,
                            all_assignees=all_assignees,
                            unassigned_count=unassigned_count,
@@ -237,8 +260,10 @@ def reorder_tasks():
 def delete_task(id):
     task = db.session.get(Task, id)
     if task:
-        dependents = Task.query.filter_by(requires_id=task.id).all()
-        for dep in dependents: dep.requires_id = None
+        # Orphan management: reset children of deleted task
+        children = Task.query.filter_by(parent_id=task.id).all()
+        for child in children: child.parent_id = None
+        
         db.session.delete(task)
         db.session.commit()
     return redirect(url_for('index'))
@@ -248,8 +273,10 @@ def sweep_completed():
     tasks_to_delete = db.session.query(Task).filter(Task.completed_at.isnot(None)).all()
     ids_to_delete = [t.id for t in tasks_to_delete]
     if ids_to_delete:
-        dependents = Task.query.filter(Task.requires_id.in_(ids_to_delete)).all()
-        for dep in dependents: dep.requires_id = None
+        # Orphan management: reset children of deleted tasks
+        children = Task.query.filter(Task.parent_id.in_(ids_to_delete)).all()
+        for child in children: child.parent_id = None
+        
         for t in tasks_to_delete: db.session.delete(t)
         db.session.commit()
     return redirect(url_for('index'))

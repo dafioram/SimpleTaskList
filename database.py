@@ -20,8 +20,8 @@ class Task(db.Model):
     due_date = db.Column(db.String(20), nullable=True)
     completion_note = db.Column(db.Text, nullable=True)
     
-    # Dependency
-    requires_id = db.Column(db.Integer, nullable=True)
+    # Dependency (Top-Down Epic/Subtask Model)
+    parent_id = db.Column(db.Integer, nullable=True)
 
     # Context / Details
     context = db.Column(db.Text, nullable=True)
@@ -63,7 +63,8 @@ def init_db(app):
             except: pass
             try: conn.execute(text("ALTER TABLE task ADD COLUMN completion_note TEXT"))
             except: pass
-            try: conn.execute(text("ALTER TABLE task ADD COLUMN requires_id INTEGER"))
+            # Switched to parent_id for the Epic/Sub-task structure
+            try: conn.execute(text("ALTER TABLE task ADD COLUMN parent_id INTEGER"))
             except: pass
             try: conn.execute(text("ALTER TABLE task ADD COLUMN context TEXT"))
             except: pass
