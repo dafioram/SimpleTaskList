@@ -197,6 +197,42 @@
     transform-origin: center;
     pointer-events: none;
 }
+        #task-list.hide-completed .task-card.completed {
+            display: none !important;
+        }
+
+        .task-card.highlight-jump {
+            outline: 2px solid #bb86fc;
+            box-shadow: 0 0 12px rgba(187, 134, 252, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .action-buttons-container {
+            text-align: center; 
+            margin-top: 30px; 
+            margin-bottom: 50px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 15px;
+        }
+
+        .action-btn {
+            background-color: transparent; 
+            color: #aaa; 
+            border: 1px solid #555; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .action-btn:hover { 
+            background-color: #2c2c2c; 
+            color: #fff; 
+            border-color: #bb86fc; 
+        }
 		
     </style>
     <script>
@@ -222,42 +258,107 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            var el = document.getElementById('task-list');
-            var sortable = Sortable.create(el, {
-                handle: '.drag-handle', 
-                animation: 150, 
-                ghostClass: 'sortable-ghost', 
-                filter: '.completed', 
-                
-                onEnd: function (evt) {
-                    var itemOrder = [];
-                    var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
-                    
-                    activeItems.forEach(function(item) {
-                        itemOrder.push(item.getAttribute('data-id'));
-                    });
+		document.addEventListener('DOMContentLoaded', function() {
+			// --- 1. Drag and Drop Sorting Logic ---
+			var el = document.getElementById('task-list');
+			var sortable = Sortable.create(el, {
+				handle: '.drag-handle', 
+				animation: 150, 
+				ghostClass: 'sortable-ghost', 
+				filter: '.completed', 
+				
+				onEnd: function (evt) {
+					var itemOrder = [];
+					var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
+					
+					activeItems.forEach(function(item) {
+						itemOrder.push(item.getAttribute('data-id'));
+					});
 
-                    fetch('/reorder', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ order: itemOrder }),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Order saved:', data);
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                    });
-                }
-            });
-        });
+					fetch('/reorder', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ order: itemOrder }),
+					})
+					.then(response => response.json())
+					.then(data => {
+						console.log('Order saved:', data);
+					})
+					.catch((error) => {
+						console.error('Error:', error);
+					});
+				}
+			});
+
+			// --- 2. Hide/Unhide & Jump Logic ---
+			const toggleBtn = document.getElementById('toggle-completed-btn');
+			const jumpBtn = document.getElementById('jump-bottom-btn');
+			// We can reuse the 'el' variable since it's the exact same #task-list element
+			
+			let isHidden = false;
+
+			if (toggleBtn && jumpBtn && el) {
+				// Toggle visibility
+				toggleBtn.addEventListener('click', function() {
+					isHidden = !isHidden;
+					if (isHidden) {
+						el.classList.add('hide-completed');
+						toggleBtn.innerHTML = '👁️ Show Completed';
+					} else {
+						el.classList.remove('hide-completed');
+						toggleBtn.innerHTML = '👁️ Hide Completed';
+					}
+				});
+
+				// Jump to last unfinished
+				jumpBtn.addEventListener('click', function() {
+					// Target tasks that do NOT have the completed class
+					const unfinishedTasks = el.querySelectorAll('.task-card:not(.completed)');
+					
+					if (unfinishedTasks.length > 0) {
+						// Get the absolute last pending task in the DOM
+						const lastUnfinished = unfinishedTasks[unfinishedTasks.length - 1];
+						
+						// Smoothly scroll it to the center of the viewport
+						lastUnfinished.scrollIntoView({ behavior: 'smooth', block: 'center' });
+						
+						// Briefly flash a purple highlight
+						lastUnfinished.classList.add('highlight-jump');
+						setTimeout(() => {
+							lastUnfinished.classList.remove('highlight-jump');
+						}, 1500);
+					}
+				});
+			}
+		});
     </script>
 </head>
 <body>
+
+    <div class="add-container">
+        <form action="/add" method="POST">
+            <div class="form-row-main">
+                <input type="text" name="content" placeholder="Add a task..." required autocomplete="off">
+                <button type="submit" class="add-btn">+</button>
+            </div>
+            
+            <div class="form-row-details">
+                <input type="text" name="label" class="small-input" placeholder="Label (Optional)" list="main-labels-list" autocomplete="off">
+                <datalist id="main-labels-list">
+                    {% for lbl, count in all_labels %}
+                        <option value="{{ lbl }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+        </form>
+    </div>
+
+	<div class="action-buttons-container">
+        <button id="toggle-completed-btn" class="action-btn">👁️ Hide Completed</button>
+        <button id="jump-bottom-btn" class="action-btn">⬇️ Jump to Last Unfinished</button>
+    </div>
 
     <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
         
@@ -298,24 +399,6 @@
         </div>
         {% endif %}
         
-    </div>
-
-    <div class="add-container">
-        <form action="/add" method="POST">
-            <div class="form-row-main">
-                <input type="text" name="content" placeholder="Add a task..." required autocomplete="off">
-                <button type="submit" class="add-btn">+</button>
-            </div>
-            
-            <div class="form-row-details">
-                <input type="text" name="label" class="small-input" placeholder="Label (Optional)" list="main-labels-list" autocomplete="off">
-                <datalist id="main-labels-list">
-                    {% for lbl, count in all_labels %}
-                        <option value="{{ lbl }}">
-                    {% endfor %}
-                </datalist>
-            </div>
-        </form>
     </div>
 
     <div id="task-list">
@@ -413,13 +496,6 @@
             </div>
         </div>
         {% endfor %}
-    </div>
-
-    <div style="text-align: center; margin-top: 30px; margin-bottom: 50px;">
-        <a href="/sweep" onclick="return confirm('Clear all finished tasks?');"
-           style="color: #666; text-decoration: none; font-size: 0.9rem; border: 1px solid #333; padding: 8px 16px; border-radius: 20px;">
-           🧹 Sweep Completed
-        </a>
     </div>
 </body>
 </html>

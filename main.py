@@ -268,19 +268,6 @@ def delete_task(id):
         db.session.commit()
     return redirect(url_for('index'))
 
-@app.route('/sweep')
-def sweep_completed():
-    tasks_to_delete = db.session.query(Task).filter(Task.completed_at.isnot(None)).all()
-    ids_to_delete = [t.id for t in tasks_to_delete]
-    if ids_to_delete:
-        # Orphan management: reset children of deleted tasks
-        children = Task.query.filter(Task.parent_id.in_(ids_to_delete)).all()
-        for child in children: child.parent_id = None
-        
-        for t in tasks_to_delete: db.session.delete(t)
-        db.session.commit()
-    return redirect(url_for('index'))
-
 # --- API ENDPOINTS ---
 
 @app.route('/api/health', methods=['GET'])
