@@ -8,23 +8,56 @@
         body {
             background-color: #121212; color: #e0e0e0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 20px;
-            display: flex; justify-content: center; align-items: center; height: 100vh;
+            margin: 0; padding: 15px; 
         }
+        
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
+        .filter-pill {
+            text-decoration: none; font-size: 0.85rem; font-weight: bold;
+            padding: 6px 14px; border-radius: 20px;
+            background-color: #2c2c2c; color: #aaa; border: 1px solid #333;
+            display: inline-flex; align-items: center; pointer-events: none; 
+        }
+        .filter-pill.active { background-color: #bb86fc; color: #000; border-color: #bb86fc; }
+        .avatar-small {
+            width: 16px; height: 16px; border-radius: 50%; display: inline-flex; 
+            align-items: center; justify-content: center; font-size: 0.55rem; 
+            font-weight: bold; color: #121212; margin-right: 6px; vertical-align: middle;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(18, 18, 18, 0.85);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; padding: 20px;
+        }
+
         .edit-card {
             background: #1e1e1e; padding: 30px; border-radius: 12px;
-            width: 100%; max-width: 400px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            width: 100%; max-width: 450px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
             display: flex; flex-direction: column; gap: 20px;
         }
+        
         h2 { margin-top: 0; margin-bottom: 0; color: #bb86fc; }
         
-        input[type="text"], input[type="number"], textarea {
-            width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333;
-            font-size: 16px; background: #2c2c2c; color: white; outline: none;
-            box-sizing: border-box; margin-bottom: 0; 
-            font-family: inherit;
-        }
+		input[type="text"], 
+		input[type="number"], 
+		textarea,
+		select {
+			width: 100%;
+			padding: 15px;
+			border-radius: 8px;
+			border: 1px solid #333;
+			font-size: 16px;
+			background: #2c2c2c;
+			color: white;
+			outline: none;
+			box-sizing: border-box;
+			margin-bottom: 0;
+			font-family: inherit;
+		}
         
         .main-input { margin-bottom: 10px !important; }
 
@@ -32,28 +65,8 @@
         
         input.small-input {
             background: #2c2c2c; color: #aaa; border: 1px solid #333; padding: 10px;
-            border-radius: 6px; font-size: 14px; outline: none; width: 50%;
+            border-radius: 6px; font-size: 14px; outline: none; flex: 1; min-width: 0;
         }
-
-        .color-selector { 
-            display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; 
-        }
-        .color-option { cursor: pointer; position: relative; }
-        .color-option input { display: none; }
-        .dot { width: 30px; height: 30px; border-radius: 50%; display: block; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; }
-        
-        .dot.default { background-color: #555; }
-        .dot.purple { background-color: #d0bcff; }
-        .dot.blue { background-color: #448aff; }
-        .dot.green { background-color: #69f0ae; }
-        .dot.orange { background-color: #ffab40; }
-        .dot.red { background-color: #ff5252; }
-        .dot.pink   { background-color: #ff80ab; }
-        .dot.teal   { background-color: #64ffda; }
-        .dot.yellow { background-color: #ffff00; }
-        .dot.indigo { background-color: #536dfe; }
-
-        .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
         .note-area {
             width: 100%; padding: 15px; border-radius: 8px; 
@@ -69,54 +82,103 @@
         }
         .save-btn { background-color: #bb86fc; color: #000; }
         .cancel-btn { background-color: #333; color: #fff; }
+
+        .delete-btn-modal { 
+            background-color: transparent; border: 1px solid #ff5252; color: #ff5252; 
+            transition: all 0.2s;
+        }
+        .delete-btn-modal:hover { background-color: #ff5252; color: #000; }
     </style>
 </head>
 <body>
 
-    <div class="edit-card">
-        <h2>Edit Task <span style="font-size: 0.6em; color: #555; vertical-align: middle;">#{{ task.id }}</span></h2>
-        <form method="POST">
-            <input type="text" name="content" class="main-input" value="{{ task.content }}" required autocomplete="off">
-            
-            <div style="margin-bottom: 20px;">
-                <textarea name="context" rows="3" placeholder="Add details, links, or notes..." style="font-size: 14px; color: #aaa;">{{ task.context or '' }}</textarea>
-            </div>
-            
-            <div class="meta-inputs">
-                <input type="text" name="label" class="small-input" placeholder="Label" value="{{ task.label or '' }}">
-                <input type="date" name="due_date" class="small-input" value="{{ task.due_date or '' }}">
-            </div>
+    <div>
+        {% if all_labels %}
+        <div class="filter-bar">
+            <div class="filter-pill active">All</div>
+            {% for lbl, count in all_labels %}
+                <div class="filter-pill">{{ lbl }} ({{ count }})</div>
+            {% endfor %}
+        </div>
+        {% endif %}
 
-            <div style="margin-top: 15px;">
-                <label style="display:block; margin-bottom:5px; color:#666; font-size:0.8rem;">Requires Task ID (Optional):</label>
-                <input type="number" name="requires_id" class="small-input" style="width: 100%;" placeholder="e.g. 15" value="{{ task.requires_id or '' }}">
-            </div>
-
-            <div class="color-selector">
-                <label class="color-option"><input type="radio" name="color" value="default" {{ 'checked' if task.color == 'default' }}><span class="dot default"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="red" {{ 'checked' if task.color == 'red' }}><span class="dot red"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="orange" {{ 'checked' if task.color == 'orange' }}><span class="dot orange"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="yellow" {{ 'checked' if task.color == 'yellow' }}><span class="dot yellow"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="green" {{ 'checked' if task.color == 'green' }}><span class="dot green"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="teal" {{ 'checked' if task.color == 'teal' }}><span class="dot teal"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="blue" {{ 'checked' if task.color == 'blue' }}><span class="dot blue"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="indigo" {{ 'checked' if task.color == 'indigo' }}><span class="dot indigo"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="purple" {{ 'checked' if task.color == 'purple' }}><span class="dot purple"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="pink" {{ 'checked' if task.color == 'pink' }}><span class="dot pink"></span></label>
-            </div>
-
-            {% if task.completed_at %}
-            <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">
-                <label style="display:block; margin-bottom:8px; color:#666; font-size:0.9rem;">Completion Note (Optional):</label>
-                <textarea name="completion_note" class="note-area" rows="3" placeholder="Add details about how this was resolved...">{{ task.completion_note or '' }}</textarea>
-            </div>
+        {% if all_assignees or unassigned_count > 0 %}
+        <div class="filter-bar">
+            <div class="filter-pill active">Anyone</div>
+            {% for a, count in all_assignees %}
+                <div class="filter-pill">
+                    <span class="avatar-small" style="background-color: {{ assignee_colors[a] }}">{{ a[0]|upper }}</span> 
+                    {{ a }} ({{ count }})
+                </div>
+            {% endfor %}
+            {% if unassigned_count > 0 %}
+                <div class="filter-pill">
+                    <span class="avatar-small" style="background-color: #555; color: #aaa;">?</span> 
+                    Unassigned ({{ unassigned_count }})
+                </div>
             {% endif %}
+        </div>
+        {% endif %}
+    </div>
 
-            <div class="btn-group">
-                <a href="/" class="btn cancel-btn">Cancel</a>
-                <button type="submit" class="btn save-btn">Save</button>
-            </div>
-        </form>
+    <div class="modal-overlay">
+        <div class="edit-card">
+            <h2>Edit Task <span style="font-size: 0.6em; color: #555; vertical-align: middle;">#{{ task.id }}</span></h2>
+            <form method="POST">
+                <input type="text" name="content" class="main-input" value="{{ task.content }}" required autocomplete="off">
+                
+                <div style="margin-bottom: 20px;">
+                    <textarea name="context" rows="3" placeholder="Add details, links, or notes..." style="font-size: 14px; color: #aaa;">{{ task.context or '' }}</textarea>
+                </div>
+                
+                <div class="meta-inputs">
+                    <input type="text" name="label" class="small-input" placeholder="Label" list="labels-list" value="{{ task.label or '' }}" autocomplete="off">
+                    <datalist id="labels-list">
+                        {% for lbl, count in all_labels %}
+                            <option value="{{ lbl }}">
+                        {% endfor %}
+                    </datalist>
+                    
+                    <input type="text" name="assignee" class="small-input" placeholder="Assignee" list="assignees-list" value="{{ task.assignee or '' }}" autocomplete="off">
+                    <datalist id="assignees-list">
+                        {% for a in unique_assignees %}
+                            <option value="{{ a }}">
+                        {% endfor %}
+                    </datalist>
+
+                    <input type="date" name="due_date" class="small-input" value="{{ task.due_date or '' }}">
+                </div>
+
+				<div style="margin-top: 15px;">
+					<label style="display:block; margin-bottom:5px; color:#666; font-size:0.8rem;">
+						Parent Task (Optional):
+					</label>
+					<select name="parent_id" class="small-input" style="width: 100%;">
+						<option value="">No Parent</option>
+						{% for t in all_tasks %}
+							{% if t.id != task.id %}
+								<option value="{{ t.id }}" {% if task.parent_id == t.id %}selected{% endif %}>
+									#{{ t.id }} — {{ t.content[:40] }}
+								</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+				</div>
+
+                {% if task.completed_at %}
+                <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">
+                    <label style="display:block; margin-bottom:8px; color:#666; font-size:0.9rem;">Completion Note (Optional):</label>
+                    <textarea name="completion_note" class="note-area" rows="3" placeholder="Add details about how this was resolved...">{{ task.completion_note or '' }}</textarea>
+                </div>
+                {% endif %}
+
+                <div class="btn-group">
+                    <a href="/delete/{{ task.id }}" class="btn delete-btn-modal" onclick="return confirm('Are you sure you want to permanently delete this task?');">Delete</a>
+                    <a href="/" class="btn cancel-btn">Cancel</a>
+                    <button type="submit" class="btn save-btn">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 
 </body>

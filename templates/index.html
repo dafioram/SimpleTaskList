@@ -13,12 +13,10 @@
             margin: 0; padding: 15px; max-width: 600px; margin: 0 auto;
         }
 
-        /* --- Input Area Container --- */
         .add-container {
             background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px;
         }
         .add-container form { display: flex; flex-direction: column; gap: 15px; }
-
         .form-row-main { display: flex; gap: 10px; width: 100%; }
 
         input[type="text"], textarea {
@@ -35,54 +33,35 @@
             flex-shrink: 0;
         }
         button.add-btn:hover { background-color: #a370db; }
-
-        .form-row-details { display: flex; gap: 10px; width: 100%; }
-
+        
+        .form-row-details { display: flex; gap: 10px; width: 100%; margin-top: -5px; }
         input.small-input {
             background: #2c2c2c; color: #aaa; border: none; padding: 12px;
             border-radius: 8px; font-size: 14px; outline: none;
             flex: 1; min-width: 0; box-sizing: border-box;
         }
-        input[type="date"] { font-family: inherit; }
-        
-        .color-selector { 
-            display: flex; gap: 10px; align-items: center; justify-content: center; 
-            padding-top: 5px; flex-wrap: wrap; 
-        }
-        .color-option { cursor: pointer; position: relative; display: flex; align-items: center; }
-        .color-option input { display: none; } 
-        .dot { width: 30px; height: 30px; border-radius: 50%; display: block; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; }
-        
-        .dot.default { background-color: #555; }
-        .dot.purple { background-color: #d0bcff; }
-        .dot.blue { background-color: #448aff; }
-        .dot.green { background-color: #69f0ae; }
-        .dot.orange { background-color: #ffab40; }
-        .dot.red { background-color: #ff5252; }
-        .dot.pink   { background-color: #ff80ab; }
-        .dot.teal   { background-color: #64ffda; }
-        .dot.yellow { background-color: #ffff00; }
-        .dot.indigo { background-color: #536dfe; }
-        .color-option input:checked + .dot { opacity: 1; transform: scale(1.2); border-color: #fff; }
 
-        /* Filter Bar */
-        .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
         .filter-pill {
             text-decoration: none; font-size: 0.85rem; font-weight: bold;
             padding: 6px 14px; border-radius: 20px;
             background-color: #2c2c2c; color: #aaa; border: 1px solid #333;
-            transition: all 0.2s;
+            transition: all 0.2s; display: inline-flex; align-items: center;
         }
         .filter-pill:hover { border-color: #bb86fc; color: #fff; }
         .filter-pill.active { background-color: #bb86fc; color: #000; border-color: #bb86fc; }
+
+        .avatar-small {
+            width: 16px; height: 16px; border-radius: 50%; display: inline-flex; 
+            align-items: center; justify-content: center; font-size: 0.55rem; 
+            font-weight: bold; color: #121212; margin-right: 6px; vertical-align: middle;
+        }
 
         /* --- Task Card --- */
         .task-card {
             background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
             border-radius: 8px; display: flex; align-items: flex-start; gap: 12px;
-            border-left: 6px solid #333; 
-            /* Essential for smooth dragging */
-            touch-action: pan-y; 
+            border-left: 6px solid #333; touch-action: pan-y; position: relative;
         }
         
         .task-card.border-purple { border-left-color: #d0bcff; }
@@ -95,29 +74,42 @@
         .task-card.border-yellow { border-left-color: #ffff00; }
         .task-card.border-indigo { border-left-color: #536dfe; }
 
-        .task-content { flex-grow: 1; display: flex; flex-direction: column; }
-        .task-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; }
+        .task-content { flex-grow: 1; display: flex; flex-direction: column; width: 100%; min-width: 0; }
         
+        .task-text { font-size: 1.1rem; color: #fff; word-break: break-word; line-height: 1.4; padding-right: 5px; }
+        
+        .task-meta {
+            display: flex; align-items: center; gap: 8px; margin-top: 6px;
+            font-size: 0.75rem; color: #666; flex-wrap: wrap;
+        }
+
+        .info-toggle {
+            background: none; border: none; color: #888; font-size: 1rem; cursor: pointer;
+            padding: 0 4px; margin: 0; transition: color 0.2s; display: inline-flex; align-items: center;
+        }
+        .info-toggle:hover { color: #bb86fc; }
+
+        .task-info {
+            display: none; font-size: 0.8rem; color: #888; margin-top: 8px; 
+            padding: 8px 10px; border-radius: 6px; background: #252525;
+            font-family: monospace; line-height: 1.4;
+        }
+
         .context-toggle {
             background: none; border: none; color: #888; font-size: 0.85rem; cursor: pointer;
-            padding: 0; margin-top: 4px; transition: color 0.2s; display: inline-flex; align-items: center; font-weight: bold;
+            padding: 0; margin-top: 8px; transition: color 0.2s; display: inline-flex; align-items: center; font-weight: bold;
         }
         .context-toggle:hover { color: #bb86fc; }
+        
         .task-context {
             display: none; margin-top: 8px; font-size: 0.95rem; color: #bbb;
             background: #252525; padding: 10px; border-radius: 6px;
-            white-space: pre-wrap; border-left: 2px solid #555;
+            border-left: 2px solid #555;
         }
         
         .completion-note {
             margin-top: 6px; font-size: 0.95rem; color: #d0bcff;
             font-style: italic; border-left: 2px solid #555; padding-left: 8px;
-        }
-
-        .task-meta {
-            display: flex; align-items: center; gap: 8px; margin-top: 6px;
-            font-size: 0.75rem; color: #666; flex-wrap: wrap;
         }
 
         .dep-active { color: #ff8a80; font-weight: bold; }
@@ -128,7 +120,6 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             background-color: #333; color: #ccc;
         }
-        /* Chip Colors... (omitted detailed list for brevity, same as before) */
         .chip-purple { background-color: rgba(208, 188, 255, 0.15); color: #d0bcff; }
         .chip-blue   { background-color: rgba(68, 138, 255, 0.15); color: #448aff; }
         .chip-green  { background-color: rgba(105, 240, 174, 0.15); color: #69f0ae; }
@@ -139,97 +130,212 @@
         .chip-yellow { background-color: rgba(255, 255, 0, 0.15);   color: #ffff00; }
         .chip-indigo { background-color: rgba(83, 109, 254, 0.15);  color: #536dfe; }
 
-        /* --- DRAG HANDLE --- */
         .drag-handle { 
-            cursor: grab; color: #555; font-size: 20px; line-height: 1; padding: 5px; 
+            cursor: grab; color: #555; font-size: 20px; line-height: 1; padding: 0 5px; 
             display: flex; align-items: center; justify-content: center;
-            margin-right: 5px; user-select: none;
+            margin-right: 5px; user-select: none; align-self: stretch;
         }
         .drag-handle:active { cursor: grabbing; color: #fff; }
-        
-        /* Visual style for the item being dragged */
         .sortable-ghost { opacity: 0.2; background-color: #bb86fc; }
 
         .toggle-btn {
-            width: 24px; height: 24px; border-radius: 50%; border: 2px solid #777;
+            width: 24px; height: 24px; border-radius: 4px; border: 2px solid #777;
             background: transparent; display: flex; align-items: center; justify-content: center;
             text-decoration: none; color: transparent; flex-shrink: 0; margin-top: 2px;
+            font-size: 16px; font-weight: bold;
         }
         .toggle-btn:hover { border-color: #fff; }
-        .icon-btn { text-decoration: none; color: #444; font-size: 1.2rem; padding: 0 5px; }
+
+        .right-actions-column {
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            align-self: stretch; padding-left: 10px;
+        }
+        
+        .avatar-top-right {
+            width: 20px; height: 20px; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; font-size: 0.7rem; 
+            font-weight: bold; color: #121212; flex-shrink: 0; margin-top: 2px;
+        }
+
+        .icon-btn { 
+            text-decoration: none; color: #444; font-size: 1.2rem; padding: 5px; 
+            display: inline-block; margin-top: auto; 
+        }
         .icon-btn:hover { color: #fff; }
-        .delete-btn:hover { color: #ff5252; }
 
         .task-card.completed { opacity: 0.5; background-color: #181818; border-left-color: #222; }
         .task-card.completed .task-text { text-decoration: line-through; color: #888; }
         .task-card.completed .toggle-btn { background-color: #555; border-color: #555; color: #000; }
-        .task-card.completed .drag-handle { visibility: hidden; } /* Hide handle on completed tasks */
+        .task-card.completed .drag-handle { visibility: hidden; } 
         .task-card.completed .label-chip { background-color: #222; color: #555; }
+        .task-card.completed .avatar-top-right { opacity: 0.3; }
+		
+		.strike-high {
+			text-decoration: line-through;
+			text-decoration-thickness: 2px;
+			text-decoration-color: currentColor;
+			text-decoration-skip-ink: none;
+			
+			/* This is the key line */
+			text-decoration-position: from-font; /* fallback */
+		}
+		
+.diag-slash {
+    position: relative;
+    display: inline-block;
+}
+
+.diag-slash::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 50%;
+    height: 2px;
+    background-color: currentColor;
+    transform: rotate(-25deg);
+    transform-origin: center;
+    pointer-events: none;
+}
+        #task-list.hide-completed .task-card.completed {
+            display: none !important;
+        }
+
+        .task-card.highlight-jump {
+            outline: 2px solid #bb86fc;
+            box-shadow: 0 0 12px rgba(187, 134, 252, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .action-buttons-container {
+            text-align: center; 
+            margin-top: 30px; 
+            margin-bottom: 50px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 15px;
+        }
+
+        .action-btn {
+            background-color: transparent; 
+            color: #aaa; 
+            border: 1px solid #555; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .action-btn:hover { 
+            background-color: #2c2c2c; 
+            color: #fff; 
+            border-color: #bb86fc; 
+        }
+		
     </style>
     <script>
         function toggleContext(id) {
             const contextDiv = document.getElementById('context-' + id);
             const btn = document.getElementById('btn-ctx-' + id);
+            
             if (contextDiv.style.display === 'block') {
                 contextDiv.style.display = 'none';
-                btn.innerHTML = 'Details ▶';
+                btn.innerHTML = '▼ Details 📝';
             } else {
                 contextDiv.style.display = 'block';
-                btn.innerHTML = 'Details ▼';
+                btn.innerHTML = '▲ Details 📝';
             }
         }
 
-        // --- DRAG AND DROP LOGIC ---
-        document.addEventListener('DOMContentLoaded', function() {
-            var el = document.getElementById('task-list');
-            var sortable = Sortable.create(el, {
-                handle: '.drag-handle', // Drag handle selector within list items
-                animation: 150, // Animation speed (ms)
-                ghostClass: 'sortable-ghost', // Class name for the drop placeholder
-                filter: '.completed', // Do not allow dragging completed items
-                
-                onEnd: function (evt) {
-                    // 1. Get all task IDs in their new order
-                    var itemOrder = [];
-                    // Select only active tasks to re-index
-                    var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
-                    
-                    activeItems.forEach(function(item) {
-                        itemOrder.push(item.getAttribute('data-id'));
-                    });
+        function toggleInfo(id) {
+            const infoDiv = document.getElementById('info-' + id);
+            if (infoDiv.style.display === 'block') {
+                infoDiv.style.display = 'none';
+            } else {
+                infoDiv.style.display = 'block';
+            }
+        }
 
-                    // 2. Send new order to backend
-                    fetch('/reorder', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ order: itemOrder }),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Order saved:', data);
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                    });
-                }
-            });
-        });
+		document.addEventListener('DOMContentLoaded', function() {
+			// --- 1. Drag and Drop Sorting Logic ---
+			var el = document.getElementById('task-list');
+			var sortable = Sortable.create(el, {
+				handle: '.drag-handle', 
+				animation: 150, 
+				ghostClass: 'sortable-ghost', 
+				filter: '.completed', 
+				
+				onEnd: function (evt) {
+					var itemOrder = [];
+					var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
+					
+					activeItems.forEach(function(item) {
+						itemOrder.push(item.getAttribute('data-id'));
+					});
+
+					fetch('/reorder', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ order: itemOrder }),
+					})
+					.then(response => response.json())
+					.then(data => {
+						console.log('Order saved:', data);
+					})
+					.catch((error) => {
+						console.error('Error:', error);
+					});
+				}
+			});
+
+			// --- 2. Hide/Unhide & Jump Logic ---
+			const toggleBtn = document.getElementById('toggle-completed-btn');
+			const jumpBtn = document.getElementById('jump-bottom-btn');
+			// We can reuse the 'el' variable since it's the exact same #task-list element
+			
+			let isHidden = false;
+
+			if (toggleBtn && jumpBtn && el) {
+				// Toggle visibility
+				toggleBtn.addEventListener('click', function() {
+					isHidden = !isHidden;
+					if (isHidden) {
+						el.classList.add('hide-completed');
+						toggleBtn.innerHTML = '👁️ Show Completed';
+					} else {
+						el.classList.remove('hide-completed');
+						toggleBtn.innerHTML = '👁️ Hide Completed';
+					}
+				});
+
+				// Jump to last unfinished
+				jumpBtn.addEventListener('click', function() {
+					// Target tasks that do NOT have the completed class
+					const unfinishedTasks = el.querySelectorAll('.task-card:not(.completed)');
+					
+					if (unfinishedTasks.length > 0) {
+						// Get the absolute last pending task in the DOM
+						const lastUnfinished = unfinishedTasks[unfinishedTasks.length - 1];
+						
+						// Smoothly scroll it to the center of the viewport
+						lastUnfinished.scrollIntoView({ behavior: 'smooth', block: 'center' });
+						
+						// Briefly flash a purple highlight
+						lastUnfinished.classList.add('highlight-jump');
+						setTimeout(() => {
+							lastUnfinished.classList.remove('highlight-jump');
+						}, 1500);
+					}
+				});
+			}
+		});
     </script>
 </head>
 <body>
-
-    {% if all_labels %}
-    <div class="filter-bar">
-        <a href="/" class="filter-pill {{ 'active' if not active_filter }}">All</a>
-        {% for lbl in all_labels %}
-        <a href="/?label={{ lbl }}" class="filter-pill {{ 'active' if active_filter == lbl }}">
-            {{ lbl }}
-        </a>
-        {% endfor %}
-    </div>
-    {% endif %}
 
     <div class="add-container">
         <form action="/add" method="POST">
@@ -238,30 +344,66 @@
                 <button type="submit" class="add-btn">+</button>
             </div>
             
-            <textarea name="context" rows="2" placeholder="Add details, links, or notes..." style="resize: none; font-size: 0.9rem; color: #aaa;"></textarea>
-
             <div class="form-row-details">
-                <input type="text" name="label" class="small-input" placeholder="Label">
-                <input type="date" name="due_date" class="small-input">
-            </div>
-            <div class="color-selector">
-                <label class="color-option"><input type="radio" name="color" value="default" checked><span class="dot default"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="red"><span class="dot red"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="orange"><span class="dot orange"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="yellow"><span class="dot yellow"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="green"><span class="dot green"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="teal"><span class="dot teal"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="blue"><span class="dot blue"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="indigo"><span class="dot indigo"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="purple"><span class="dot purple"></span></label>
-                <label class="color-option"><input type="radio" name="color" value="pink"><span class="dot pink"></span></label>
+                <input type="text" name="label" class="small-input" placeholder="Label (Optional)" list="main-labels-list" autocomplete="off">
+                <datalist id="main-labels-list">
+                    {% for lbl, count in all_labels %}
+                        <option value="{{ lbl }}">
+                    {% endfor %}
+                </datalist>
             </div>
         </form>
     </div>
 
+	<div class="action-buttons-container">
+        <button id="toggle-completed-btn" class="action-btn">👁️ Hide Completed</button>
+        <button id="jump-bottom-btn" class="action-btn">⬇️ Jump to Last Unfinished</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+        
+        {% if all_labels %}
+        <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
+            <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Label</div>
+            <div class="filter-bar" style="margin-bottom: 0;">
+                <a href="/?{% if active_assignee %}assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if not active_filter }}">All ({{ total_active }})</a>
+                {% for lbl, count in all_labels %}
+                <a href="/?label={{ lbl }}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_filter == lbl }}">
+                    {{ lbl }} ({{ count }})
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if all_assignees or unassigned_count > 0 %}
+        <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
+            <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Person</div>
+            <div class="filter-bar" style="margin-bottom: 0;">
+                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}" class="filter-pill {{ 'active' if not active_assignee }}">Anyone</a>
+                
+                {% for a, count in all_assignees %}
+                <a href="/?assignee={{ a }}{% if active_filter %}&label={{ active_filter }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == a }}">
+                    <span class="avatar-small" style="background-color: {{ assignee_colors[a] }}">{{ a[0]|upper }}</span> 
+                    {{ a }} ({{ count }})
+                </a>
+                {% endfor %}
+                
+                {% if unassigned_count > 0 or active_assignee == 'Unassigned' %}
+                <a href="/?assignee=Unassigned{% if active_filter %}&label={{ active_filter }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == 'Unassigned' }}">
+                    <span class="avatar-small" style="background-color: #555; color: #aaa;">?</span> 
+                    Unassigned ({{ unassigned_count }})
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+
     <div id="task-list">
         {% for task in tasks %}
-        <div class="task-card border-{{ task.color }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
+        <div class="task-card border-{{ label_colors.get(task.label, 'default') }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
             
             <div class="drag-handle">⋮⋮</div>
 
@@ -270,38 +412,50 @@
             </a>
 
             <div class="task-content">
-                <div class="task-header">
-                    <span class="task-text">{{ task.content }}</span>
-                </div>
-                
-                {% if task.context %}
-                    <button id="btn-ctx-{{ task.id }}" class="context-toggle" onclick="toggleContext({{ task.id }})" title="Show Details">Details ▶</button>
-                {% endif %}
-
-                {% if task.context %}
-                    <div id="context-{{ task.id }}" class="task-context">{{ task.context }}</div>
-                {% endif %}
-
-                {% if task.completion_note %}
-                    <div class="completion-note">“{{ task.completion_note }}”</div>
-                {% endif %}
+                <div class="task-text">{{ task.content }}</div>
                 
                 <div class="task-meta">
                     <span style="font-family: monospace; color: #555;">#{{ task.id }}</span>
                     
-                    {% if task.requires_id %}
-                        {% if status_map.get(task.requires_id) %}
-                            <span class="dep-done">• Requires: #{{ task.requires_id }}</span>
-                        {% else %}
-                            <span class="dep-active">• Requires: #{{ task.requires_id }}</span>
-                        {% endif %}
-                    {% endif %}
+                    <button id="btn-info-{{ task.id }}" class="info-toggle" onclick="toggleInfo({{ task.id }})" title="Task Metadata">ⓘ</button>
+                    
+{% if children_map.get(task.id) %}
+    {% set children = children_map[task.id] | sort(attribute='id') %}
+    {% set all_done = children | selectattr('completed_at') | list | length == children | length %}
+
+    {% set ids = [] %}
+    {% for child in children %}
+
+        {% if all_done %}
+            {# Everything complete → full strike #}
+            {% set _ = ids.append(
+                '<span class="strike-high">#' ~ child.id ~ '</span>'
+            ) %}
+
+        {% else %}
+            {% if child.completed_at %}
+                {# Partial complete → diagonal slash #}
+                {% set _ = ids.append(
+                    '<span class="diag-slash">#' ~ child.id ~ '</span>'
+                ) %}
+            {% else %}
+                {% set _ = ids.append('#' ~ child.id) %}
+            {% endif %}
+        {% endif %}
+
+    {% endfor %}
+
+    <span class="{{ 'dep-done' if all_done else 'dep-active' }}">
+        • <span class="{% if all_done %}strike-high{% endif %}">
+            Requires:
+        </span>
+        {{ ids | join(', ') | safe }}
+    </span>
+{% endif %}
 
                     {% if task.label %}
-                        <a href="/?label={{ task.label }}" class="label-chip chip-{{ task.color }}">{{ task.label }}</a>
+                        <a href="/?label={{ task.label }}" class="label-chip chip-{{ label_colors.get(task.label, 'default') }}">{{ task.label }}</a>
                     {% endif %}
-                    
-                    <span>Created: {{ task.created_at.strftime('%b %d') }}</span>
 
                     {% if task.completed_at %}
                         <span>• Done: {{ task.completed_at.strftime('%b %d') }}</span>
@@ -312,19 +466,36 @@
                         {% endif %}
                     {% endif %}
                 </div>
+
+                <div id="info-{{ task.id }}" class="task-info">
+                    Created: {{ task.created_at.strftime('%b %d, %Y') }}<br>
+                    Due: {% if task.due_date %}{{ task.due_date }}{% else %}N/A{% endif %}<br>
+                    Assignee: {% if task.assignee %}{{ task.assignee }}{% else %}Unassigned{% endif %}
+                </div>
+
+                {% if task.context %}
+                    <button id="btn-ctx-{{ task.id }}" class="context-toggle" onclick="toggleContext({{ task.id }})">▼ Details 📝</button>
+                    
+                    <div id="context-{{ task.id }}" class="task-context">
+                        <div style="white-space: pre-wrap; word-break: break-word;">{{ task.context }}</div>
+                    </div>
+                {% endif %}
+
+                {% if task.completion_note %}
+                    <div class="completion-note">“{{ task.completion_note }}”</div>
+                {% endif %}
             </div>
             
-            <a href="/edit/{{ task.id }}" class="icon-btn">✎</a>
-            <a href="/delete/{{ task.id }}" class="icon-btn delete-btn" onclick="return confirm('Delete this task?');">×</a>
+            <div class="right-actions-column">
+                {% if task.assignee %}
+                    <div class="avatar-top-right" style="background-color: {{ assignee_colors[task.assignee] }};" title="{{ task.assignee }}">
+                        {{ task.assignee[0] | upper }}
+                    </div>
+                {% endif %}
+                <a href="/edit/{{ task.id }}" class="icon-btn">✎</a>
+            </div>
         </div>
         {% endfor %}
-    </div>
-
-    <div style="text-align: center; margin-top: 30px; margin-bottom: 50px;">
-        <a href="/sweep" onclick="return confirm('Clear all finished tasks?');"
-           style="color: #666; text-decoration: none; font-size: 0.9rem; border: 1px solid #333; padding: 8px 16px; border-radius: 20px;">
-           🧹 Sweep Completed
-        </a>
     </div>
 </body>
 </html>

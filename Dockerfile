@@ -18,4 +18,4 @@ EXPOSE 5000
 
 # Run the app
 # This tells the container to use the PORT variable defined in your .env or docker-compose
-CMD ["sh", "-c", "python app.py"]
+CMD ["sh", "-c", "python main.py"]
