@@ -366,9 +366,9 @@
         <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
             <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Label</div>
             <div class="filter-bar" style="margin-bottom: 0;">
-                <a href="/?{% if active_assignee %}assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if not active_filter }}">All ({{ total_active }})</a>
+                <a href="/?{% if active_assignee %}assignee={{ active_assignee }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if not active_filter }}">All ({{ total_active }})</a>
                 {% for lbl, count in all_labels %}
-                <a href="/?label={{ lbl }}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_filter == lbl }}">
+                <a href="/?label={{ lbl }}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if active_filter == lbl }}">
                     {{ lbl }} ({{ count }})
                 </a>
                 {% endfor %}
@@ -380,17 +380,17 @@
         <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
             <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Person</div>
             <div class="filter-bar" style="margin-bottom: 0;">
-                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}" class="filter-pill {{ 'active' if not active_assignee }}">Anyone</a>
+                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if not active_assignee }}">Anyone</a>
                 
                 {% for a, count in all_assignees %}
-                <a href="/?assignee={{ a }}{% if active_filter %}&label={{ active_filter }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == a }}">
+                <a href="/?assignee={{ a }}{% if active_filter %}&label={{ active_filter }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == a }}">
                     <span class="avatar-small" style="background-color: {{ assignee_colors[a] }}">{{ a[0]|upper }}</span> 
                     {{ a }} ({{ count }})
                 </a>
                 {% endfor %}
                 
                 {% if unassigned_count > 0 or active_assignee == 'Unassigned' %}
-                <a href="/?assignee=Unassigned{% if active_filter %}&label={{ active_filter }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == 'Unassigned' }}">
+                <a href="/?assignee=Unassigned{% if active_filter %}&label={{ active_filter }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == 'Unassigned' }}">
                     <span class="avatar-small" style="background-color: #555; color: #aaa;">?</span> 
                     Unassigned ({{ unassigned_count }})
                 </a>
@@ -398,6 +398,14 @@
             </div>
         </div>
         {% endif %}
+        
+        <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
+            <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Due Date</div>
+            <div class="filter-bar" style="margin-bottom: 0;">
+                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_due != '1' }}">Show All</a>
+                <a href="/?due_only=1{% if active_filter %}&label={{ active_filter }}{% endif %}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_due == '1' }}">Show Due Only</a>
+            </div>
+        </div>
         
     </div>
 

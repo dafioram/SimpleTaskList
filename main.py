@@ -71,6 +71,7 @@ def index():
 
     filter_label = request.args.get('label')
     filter_assignee = request.args.get('assignee')
+    filter_due = request.args.get('due_only')
 
     label_counts = {}
     assignee_counts = {}
@@ -99,6 +100,9 @@ def index():
         else:
             query = query.filter(Task.assignee == filter_assignee)
         
+    if filter_due == '1':  # <-- Add this block
+        query = query.filter(Task.due_date.isnot(None)).filter(Task.due_date != "")
+        
     tasks = query.all()
     
     unique_labels_query = db.session.query(Task.label).filter(Task.label.isnot(None)).filter(Task.label != "").distinct().all()
@@ -124,6 +128,7 @@ def index():
                            unassigned_count=unassigned_count,
                            active_filter=filter_label,
                            active_assignee=filter_assignee,
+                           active_due=filter_due,
                            children_map=children_map,
                            total_active=total_active)
 
