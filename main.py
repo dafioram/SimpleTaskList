@@ -298,7 +298,7 @@ def reorder_tasks():
     db.session.commit()
     return {'status': 'success'}
 
-@app.route('/delete/<int:id>')
+@app.route('/delete/<int:id>', methods=['POST'])
 def delete_task(id):
     task = db.session.get(Task, id)
     if task:

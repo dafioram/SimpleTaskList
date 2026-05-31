@@ -379,11 +379,6 @@
                 <input name="label" class="tagify-input" 
 					value="{% if task %}{{ task.labels|map(attribute='name')|join(',') }}{% endif %}" 
 					placeholder="Add labels...">
-                <datalist id="main-labels-list">
-                    {% for lbl, count in all_labels %}
-                        <option value="{{ lbl }}">
-                    {% endfor %}
-                </datalist>
             </div>
         </form>
     </div>
@@ -445,7 +440,8 @@
 
     <div id="task-list">
         {% for task in tasks %}
-        <div class="task-card border-{{ label_colors.get(task.label, 'default') }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
+        {% set primary_label_name = task.labels[0].name if task.labels else 'default' %}
+		<div class="task-card border-{{ label_colors.get(primary_label_name, 'default') }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
             
             <div class="drag-handle">⋮⋮</div>
 

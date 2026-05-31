@@ -217,11 +217,11 @@
                 </div>
                 {% endif %}
 
-                <div class="btn-group">
-                    <a href="/delete/{{ task.id }}" class="btn delete-btn-modal" onclick="return confirm('Are you sure you want to permanently delete this task?');">Delete</a>
-                    <a href="/" class="btn cancel-btn">Cancel</a>
-                    <button type="submit" class="btn save-btn">Save</button>
-                </div>
+			<div class="btn-group">
+				<button type="submit" formmethod="POST" formaction="/delete/{{ task.id }}" class="btn delete-btn-modal" onclick="return confirm('Are you sure you want to permanently delete this task?');">Delete</button>
+				<a href="/" class="btn cancel-btn">Cancel</a>
+				<button type="submit" class="btn save-btn">Save</button>
+			</div>
             </form>
         </div>
     </div>
