@@ -360,7 +360,7 @@
         <button id="jump-bottom-btn" class="action-btn">⬇️ Jump to Last Unfinished</button>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+	<div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
         
         {% if all_labels %}
         <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
@@ -399,15 +399,16 @@
         </div>
         {% endif %}
         
-        <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
-            <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Due Date</div>
-            <div class="filter-bar" style="margin-bottom: 0;">
-                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_due != '1' }}">Show All</a>
-                <a href="/?due_only=1{% if active_filter %}&label={{ active_filter }}{% endif %}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_due == '1' }}">Show Due Only</a>
+	<div style="background: #1e1e1e; padding: 6px 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; user-select: none; width: 85px;">Due Date</div>
+            <div class="filter-bar" style="display: flex; margin-bottom: 0; gap: 6px;">
+                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_due != '1' }}" style="padding: 4px 12px; font-size: 0.8rem;">All</a>
+                <a href="/?due_only=1{% if active_filter %}&label={{ active_filter }}{% endif %}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_due == '1' }}" style="padding: 4px 12px; font-size: 0.8rem;">Due Only</a>
             </div>
+            <div style="width: 85px;"></div> 
         </div>
         
-    </div>
+	</div>
 
     <div id="task-list">
         {% for task in tasks %}
