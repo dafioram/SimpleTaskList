@@ -3,6 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* Override to make Tagify match the dark theme inputs and take full width */
+        .tagify {
+            --tags-border-color: #333;
+            --tags-hover-border-color: #444;
+            --tags-focus-border-color: #666;
+            --tag-bg: #333;
+            --tag-hover: #444;
+            --tag-text-color: #eee;
+            background-color: transparent;
+            border-radius: 8px;
+            width: 100% !important;
+        }
+    </style>
     <title>Edit Task</title>
     <style>
         body {
@@ -42,30 +57,51 @@
         
         h2 { margin-top: 0; margin-bottom: 0; color: #bb86fc; }
         
-		input[type="text"], 
-		input[type="number"], 
-		textarea,
-		select {
-			width: 100%;
-			padding: 15px;
-			border-radius: 8px;
-			border: 1px solid #333;
-			font-size: 16px;
-			background: #2c2c2c;
-			color: white;
-			outline: none;
-			box-sizing: border-box;
-			margin-bottom: 0;
-			font-family: inherit;
-		}
+        input[type="text"], 
+        input[type="number"], 
+        textarea,
+        select {
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 16px;
+            background: #2c2c2c;
+            color: white;
+            outline: none;
+            box-sizing: border-box;
+            margin-bottom: 0;
+            font-family: inherit;
+        }
         
         .main-input { margin-bottom: 10px !important; }
 
-        .meta-inputs { display: flex; gap: 10px; }
+        /* Form section structural containers */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .metadata-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .metadata-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
         
         input.small-input {
-            background: #2c2c2c; color: #aaa; border: 1px solid #333; padding: 10px;
-            border-radius: 6px; font-size: 14px; outline: none; flex: 1; min-width: 0;
+            background: #2c2c2c; color: #aaa; border: 1px solid #333; padding: 12px;
+            border-radius: 6px; font-size: 14px; outline: none; width: 100%; box-sizing: border-box;
         }
 
         .note-area {
@@ -131,39 +167,48 @@
                     <textarea name="context" rows="3" placeholder="Add details, links, or notes..." style="font-size: 14px; color: #aaa;">{{ task.context or '' }}</textarea>
                 </div>
                 
-                <div class="meta-inputs">
-                    <input type="text" name="label" class="small-input" placeholder="Label" list="labels-list" value="{{ task.label or '' }}" autocomplete="off">
+                <div class="form-group">
+                    <label for="label">Labels</label>
+                    <input name="label" id="label" class="tagify-input" 
+                        value="{% if task %}{{ task.labels|map(attribute='name')|join(',') }}{% endif %}" 
+                        placeholder="Add labels...">
                     <datalist id="labels-list">
                         {% for lbl, count in all_labels %}
                             <option value="{{ lbl }}">
                         {% endfor %}
                     </datalist>
-                    
-                    <input type="text" name="assignee" class="small-input" placeholder="Assignee" list="assignees-list" value="{{ task.assignee or '' }}" autocomplete="off">
-                    <datalist id="assignees-list">
-                        {% for a in unique_assignees %}
-                            <option value="{{ a }}">
-                        {% endfor %}
-                    </datalist>
+                </div>
+                
+                <div class="metadata-row">
+                    <div class="form-group">
+                        <label for="assignee">Assignee</label>
+                        <input type="text" name="assignee" id="assignee" class="small-input" placeholder="Assignee" list="assignees-list" value="{{ task.assignee or '' }}" autocomplete="off">
+                        <datalist id="assignees-list">
+                            {% for a in unique_assignees %}
+                                <option value="{{ a }}">
+                            {% endfor %}
+                        </datalist>
+                    </div>
 
-                    <input type="date" name="due_date" class="small-input" value="{{ task.due_date or '' }}">
+                    <div class="form-group">
+                        <label for="due_date">Due Date</label>
+                        <input type="date" name="due_date" id="due_date" class="small-input" value="{{ task.due_date or '' }}">
+                    </div>
                 </div>
 
-				<div style="margin-top: 15px;">
-					<label style="display:block; margin-bottom:5px; color:#666; font-size:0.8rem;">
-						Parent Task (Optional):
-					</label>
-					<select name="parent_id" class="small-input" style="width: 100%;">
-						<option value="">No Parent</option>
-						{% for t in all_tasks %}
-							{% if t.id != task.id %}
-								<option value="{{ t.id }}" {% if task.parent_id == t.id %}selected{% endif %}>
-									#{{ t.id }} — {{ t.content[:40] }}
-								</option>
-							{% endif %}
-						{% endfor %}
-					</select>
-				</div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Parent Task (Optional):</label>
+                    <select name="parent_id" class="small-input">
+                        <option value="">No Parent</option>
+                        {% for t in all_tasks %}
+                            {% if t.id != task.id %}
+                                <option value="{{ t.id }}" {% if task.parent_id == t.id %}selected{% endif %}>
+                                    #{{ t.id }} — {{ t.content[:40] }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
 
                 {% if task.completed_at %}
                 <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">
@@ -180,6 +225,23 @@
             </form>
         </div>
     </div>
-
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+<script>
+    // Initialize Tagify
+    var inputElement = document.querySelector('.tagify-input');
+    
+    // Jinja handles injecting the list of strings directly into JS
+    var existingLabels = {{ unique_labels_list | tojson | safe }};
+    
+    new Tagify(inputElement, {
+        whitelist: existingLabels,
+        dropdown: {
+            maxItems: 20,           // Dropdown max items
+            classname: "tags-look", // Custom class for styling
+            enabled: 0,             // Show dropdown immediately when user clicks in
+            closeOnSelect: false    // Keep open after selecting a tag
+        }
+    });
+</script>
 </body>
 </html>

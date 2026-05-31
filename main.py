@@ -4,9 +4,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 import shutil
 import datetime
+import json
 
-# Import database configuration, models, and utilities
-from database import db, Task, init_db, perform_backup
+from database import db, Task, Label, init_db, perform_backup
 
 app = Flask(__name__)
 
@@ -55,6 +55,27 @@ def get_label_colors(unique_labels):
         colors[lbl] = LABEL_PALETTE[hash_val % len(LABEL_PALETTE)]
     return colors
 
+def update_task_labels(task, tagify_json_string):
+    """Parses Tagify JSON and updates the task.labels relationship."""
+    task.labels.clear()
+    if not tagify_json_string:
+        return
+    
+    try:
+        # Tagify sends data as: [{"value": "Label1"}, {"value": "Label2"}]
+        parsed_data = json.loads(tagify_json_string)
+        for item in parsed_data:
+            name = item.get('value', '').strip().title()
+            if name:
+                # Find or create the label
+                lbl = Label.query.filter_by(name=name).first()
+                if not lbl:
+                    lbl = Label(name=name)
+                    db.session.add(lbl)
+                task.labels.append(lbl)
+    except json.JSONDecodeError:
+        pass # Handle empty or malformed strings gracefully
+
 # --- ROUTES ---
 
 @app.route('/')
@@ -81,8 +102,10 @@ def index():
     for t in all_tasks_raw:
         if t.completed_at is None:
             total_active += 1
-            if t.label:
-                label_counts[t.label] = label_counts.get(t.label, 0) + 1
+            
+            # --> UPDATED LOOP: Iterate over the new labels relationship
+            for lbl in t.labels:
+                label_counts[lbl.name] = label_counts.get(lbl.name, 0) + 1
             
             assgn_key = t.assignee if t.assignee else "Unassigned"
             assignee_counts[assgn_key] = assignee_counts.get(assgn_key, 0) + 1
@@ -91,8 +114,10 @@ def index():
             unique_assignees.add(t.assignee)
 
     query = Task.query
+
     if filter_label:
-        query = query.filter(Task.label == filter_label)
+        from database import Label
+        query = query.filter(Task.labels.any(Label.name == filter_label))
         
     if filter_assignee:
         if filter_assignee == 'Unassigned':
@@ -100,13 +125,14 @@ def index():
         else:
             query = query.filter(Task.assignee == filter_assignee)
         
-    if filter_due == '1':  # <-- Add this block
+    if filter_due == '1': 
         query = query.filter(Task.due_date.isnot(None)).filter(Task.due_date != "")
         
     tasks = query.all()
     
-    unique_labels_query = db.session.query(Task.label).filter(Task.label.isnot(None)).filter(Task.label != "").distinct().all()
-    unique_labels_list = [l[0] for l in sorted(unique_labels_query)]
+    from database import Label
+    all_labels_query = Label.query.order_by(Label.name).all()
+    unique_labels_list = [l.name for l in all_labels_query]
     
     all_labels = [(lbl, label_counts.get(lbl, 0)) for lbl in unique_labels_list]
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
@@ -130,6 +156,7 @@ def index():
                            active_assignee=filter_assignee,
                            active_due=filter_due,
                            children_map=children_map,
+                           unique_labels_list=unique_labels_list,
                            total_active=total_active)
 
 @app.route('/sw.js')
@@ -139,16 +166,18 @@ def service_worker():
 @app.route('/add', methods=['POST'])
 def add_task():
     content = request.form.get('content')
-    raw_label = request.form.get('label')
-    label = raw_label.strip().title() if raw_label else None 
+    raw_labels = request.form.get('label') # Tagify string
 
     if content:
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
         new_pos = (min_pos - 1) if min_pos is not None else 0
         
-        # Color column is permanently set to 'default' in DB, we ignore it going forward
-        new_task = Task(content=content, position=new_pos, color='default', label=label)
+        new_task = Task(content=content, position=new_pos, color='default')
         db.session.add(new_task)
+        
+        # --> Handle multiple labels
+        update_task_labels(new_task, raw_labels)
+        
         db.session.commit()
     return redirect(url_for('index'))
 
@@ -160,8 +189,8 @@ def edit_task(id):
     if request.method == 'POST':
         task.content = request.form.get('content')
         
-        raw_label = request.form.get('label')
-        task.label = raw_label.strip().title() if raw_label else None
+        raw_labels = request.form.get('label')
+        update_task_labels(task, raw_labels)
         
         raw_assignee = request.form.get('assignee')
         task.assignee = raw_assignee.strip().title() if raw_assignee else None
@@ -208,18 +237,25 @@ def edit_task(id):
     label_counts = {}
     assignee_counts = {}
     unique_assignees = set()
+    total_active = 0
     
     for t in all_tasks_raw:
         if t.completed_at is None:
-            if t.label:
-                label_counts[t.label] = label_counts.get(t.label, 0) + 1
+            total_active += 1
+            
+            # --> UPDATED LOOP: Iterate over the new labels relationship
+            for lbl in t.labels:
+                label_counts[lbl.name] = label_counts.get(lbl.name, 0) + 1
+            
             assgn_key = t.assignee if t.assignee else "Unassigned"
             assignee_counts[assgn_key] = assignee_counts.get(assgn_key, 0) + 1
+            
         if t.assignee:
             unique_assignees.add(t.assignee)
 
-    unique_labels_query = db.session.query(Task.label).filter(Task.label.isnot(None)).filter(Task.label != "").distinct().all()
-    unique_labels_list = [l[0] for l in sorted(unique_labels_query)]
+    from database import Label
+    all_labels_query = Label.query.order_by(Label.name).all()
+    unique_labels_list = [l.name for l in all_labels_query]
     
     all_labels = [(lbl, label_counts.get(lbl, 0)) for lbl in unique_labels_list]
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
@@ -235,6 +271,7 @@ def edit_task(id):
                            all_assignees=all_assignees,
                            unassigned_count=unassigned_count,
                            unique_assignees=sorted(list(unique_assignees)),
+                           unique_labels_list=unique_labels_list,
                            assignee_colors=assignee_colors)
 
 @app.route('/toggle/<int:id>')
