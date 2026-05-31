@@ -274,7 +274,7 @@ def edit_task(id):
                            unique_labels_list=unique_labels_list,
                            assignee_colors=assignee_colors)
 
-@app.route('/toggle/<int:id>')
+@app.route('/toggle/<int:id>', methods=['POST'])
 def toggle_task(id):
     task = db.session.get(Task, id)
     if task:

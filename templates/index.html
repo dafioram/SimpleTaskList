@@ -4,7 +4,7 @@
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+	<link href="{{ url_for('static', filename='css/tagify.css') }}" rel="stylesheet" type="text/css" />
 	<style>
 		/* Slight override to make Tagify match your dark theme inputs */
 		.tagify {
@@ -449,9 +449,11 @@
             
             <div class="drag-handle">⋮⋮</div>
 
-            <a href="/toggle/{{ task.id }}" class="toggle-btn">
-                {% if task.completed_at %}✓{% endif %}
-            </a>
+			<form action="/toggle/{{ task.id }}" method="POST">
+				<button type="submit" class="toggle-btn">
+					✓
+				</button>
+			</form>
 
             <div class="task-content">
                 <div class="task-text">{{ task.content }}</div>
@@ -541,7 +543,7 @@
         </div>
         {% endfor %}
     </div>
-<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+<script src="{{ url_for('static', filename='js/tagify.js') }}"></script>
 <script>
     // Initialize Tagify
     var inputElement = document.querySelector('.tagify-input');
