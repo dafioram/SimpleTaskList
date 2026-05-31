@@ -498,7 +498,7 @@
 {% endif %}
 
 					{% for lbl in task.labels %}
-						<span style="background-color: {{ label_colors.get(lbl.name, '#333') }}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+						<span class="label-chip chip-{{ label_colors.get(lbl.name, 'default') }}">
 							{{ lbl.name }}
 						</span>
 					{% endfor %}
