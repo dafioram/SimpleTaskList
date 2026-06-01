@@ -47,6 +47,38 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
     completed_at = db.Column(db.DateTime, nullable=True) 
 
+    @property
+    def due_color(self):
+        if not self.due_date:
+            return 'default'
+        
+        try:
+            # If the database handed us a string, parse it into a date object first
+            if isinstance(self.due_date, str):
+                # Adjust the '%Y-%m-%d' format if your frontend sends it differently!
+                target_date = datetime.datetime.strptime(self.due_date, '%Y-%m-%d').date()
+            else:
+                target_date = self.due_date
+
+            days_left = (target_date - datetime.date.today()).days
+
+            if days_left < 0:
+                return 'red'
+            elif days_left <= 3:
+                return 'red'
+            elif days_left <= 7:
+                return 'orange'
+            elif days_left <= 14:
+                return 'yellow'
+            elif days_left <= 30:
+                return 'blue'
+            else:
+                return 'green'
+
+        except Exception as e:
+            print(f"CRASH in due_color logic: {e}")
+            return 'default'
+
     def get_time_display(self):
         if not self.due_date: return None
         try:

@@ -3,7 +3,7 @@ from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 import shutil
-import datetime
+from datetime import datetime
 import json
 
 from database import db, Task, Label, init_db, perform_backup
@@ -284,7 +284,7 @@ def toggle_task(id):
             min_pos = db.session.query(db.func.min(Task.position)).scalar()
             task.position = (min_pos - 1) if min_pos is not None else 0
         else:
-            task.completed_at = datetime.datetime.now()
+            task.completed_at = datetime.now()
         db.session.commit()
     return redirect(url_for('index'))
 
@@ -317,7 +317,7 @@ def api_health():
     health_status = {
         "status": "healthy",
         "database": "unknown",
-        "timestamp": datetime.datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat()
     }
     try:
         db.session.execute(text('SELECT 1'))

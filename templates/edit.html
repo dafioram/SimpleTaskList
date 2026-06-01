@@ -17,6 +17,12 @@
             border-radius: 8px;
             width: 100% !important;
         }
+		/* Prevent Tagify placeholder from overlapping user text */
+		.tagify__input:focus::before,
+		.tagify__input:not(:empty)::before {
+			opacity: 0 !important;
+			display: none !important;
+		}
     </style>
     <title>Edit Task</title>
     <style>

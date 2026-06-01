@@ -17,6 +17,12 @@
 			background-color: transparent;
 			border-radius: 8px;
 		}
+		/* Prevent Tagify placeholder from overlapping user text */
+		.tagify__input:focus::before,
+		.tagify__input:not(:empty)::before {
+			opacity: 0 !important;
+			display: none !important;
+		}
 	</style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <title>Task List</title>
@@ -440,8 +446,7 @@
 
     <div id="task-list">
         {% for task in tasks %}
-        {% set primary_label_name = task.labels[0].name if task.labels else 'default' %}
-		<div class="task-card border-{{ label_colors.get(primary_label_name, 'default') }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
+			<div class="task-card border-{{ task.due_color }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
             
             <div class="drag-handle">⋮⋮</div>
 
