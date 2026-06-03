@@ -66,6 +66,12 @@ def update_task_labels(task, tagify_json_string):
         parsed_data = json.loads(tagify_json_string)
         for item in parsed_data:
             name = item.get('value', '').strip().title()
+            
+            # --- RESERVED KEYWORD CHECK ---
+            # If they try to name a label "All", ignore it and move to the next item
+            if name.lower() == 'all':
+                continue
+                
             if name:
                 # Find or create the label
                 lbl = Label.query.filter_by(name=name).first()
@@ -192,8 +198,12 @@ def edit_task(id):
         raw_labels = request.form.get('label')
         update_task_labels(task, raw_labels)
         
+        # --- RESERVED ASSIGNEE CHECK ---
         raw_assignee = request.form.get('assignee')
-        task.assignee = raw_assignee.strip().title() if raw_assignee else None
+        if raw_assignee and (raw_assignee.strip().lower() != 'anyone' and raw_assignee.strip().lower() != 'unassigned'):
+            task.assignee = raw_assignee.strip().title()
+        else:
+            task.assignee = None  # Reverts to "Unassigned" fallback cleanly
 
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
