@@ -104,12 +104,15 @@ def index():
     assignee_counts = {}
     unique_assignees = set()
     total_active = 0
+    due_count = 0
     
     for t in all_tasks_raw:
         if t.completed_at is None:
             total_active += 1
             
-            # --> UPDATED LOOP: Iterate over the new labels relationship
+            if t.due_date and t.due_date.strip() != "":
+                due_count += 1
+
             for lbl in t.labels:
                 label_counts[lbl.name] = label_counts.get(lbl.name, 0) + 1
             
@@ -163,6 +166,7 @@ def index():
                            active_due=filter_due,
                            children_map=children_map,
                            unique_labels_list=unique_labels_list,
+                           due_count=due_count,
                            total_active=total_active)
 
 @app.route('/sw.js')
