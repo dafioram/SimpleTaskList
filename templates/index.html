@@ -5,25 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="{{ url_for('static', filename='css/tagify.css') }}" rel="stylesheet" type="text/css" />
-	<style>
-		/* Slight override to make Tagify match your dark theme inputs */
-		.tagify {
-			--tags-border-color: #333;
-			--tags-hover-border-color: #444;
-			--tags-focus-border-color: #666;
-			--tag-bg: #333;
-			--tag-hover: #444;
-			--tag-text-color: #eee;
-			background-color: transparent;
-			border-radius: 8px;
-		}
-		/* Prevent Tagify placeholder from overlapping user text */
-		.tagify__input:focus::before,
-		.tagify__input:not(:empty)::before {
-			opacity: 0 !important;
-			display: none !important;
-		}
-	</style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <title>Task List</title>
     <style>
@@ -77,6 +58,24 @@
             font-weight: bold; color: #121212; margin-right: 6px; vertical-align: middle;
         }
 
+		/* Slight override to make Tagify match your dark theme inputs */
+		.tagify {
+			--tags-border-color: #333;
+			--tags-hover-border-color: #444;
+			--tags-focus-border-color: #666;
+			--tag-bg: #333;
+			--tag-hover: #444;
+			--tag-text-color: #eee;
+			background-color: transparent;
+			border-radius: 8px;
+		}
+		/* Prevent Tagify placeholder from overlapping user text */
+		.tagify__input:focus::before,
+		.tagify__input:not(:empty)::before {
+			opacity: 0 !important;
+			display: none !important;
+		}
+
 		/* Brighten the Tagify placeholder text */
 		.tagify {
 			--placeholder-color: #888888 !important;
@@ -118,6 +117,16 @@
         .task-meta {
             display: flex; align-items: center; gap: 8px; margin-top: 6px;
             font-size: 0.75rem; color: #666; flex-wrap: wrap;
+        }
+
+		/* Hide empty labels by default */
+        .empty-label {
+            display: none !important;
+        }
+
+        /* Show empty labels when the body has this class */
+        body.show-empty-labels .empty-label {
+            display: inline-flex !important;
         }
 
         .info-toggle {
@@ -295,81 +304,99 @@
             }
         }
 
-		document.addEventListener('DOMContentLoaded', function() {
-			// --- 1. Drag and Drop Sorting Logic ---
-			var el = document.getElementById('task-list');
-			var sortable = Sortable.create(el, {
-				handle: '.drag-handle', 
-				animation: 150, 
-				ghostClass: 'sortable-ghost', 
-				filter: '.completed', 
-				
-				onEnd: function (evt) {
-					var itemOrder = [];
-					var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
-					
-					activeItems.forEach(function(item) {
-						itemOrder.push(item.getAttribute('data-id'));
-					});
+			document.addEventListener('DOMContentLoaded', function() {
+            // --- 1. Drag and Drop Sorting Logic ---
+            var el = document.getElementById('task-list');
+            var sortable = Sortable.create(el, {
+                handle: '.drag-handle', 
+                animation: 150, 
+                ghostClass: 'sortable-ghost', 
+                filter: '.completed', 
+                
+                onEnd: function (evt) {
+                    var itemOrder = [];
+                    var activeItems = document.querySelectorAll('#task-list .task-card:not(.completed)');
+                    
+                    activeItems.forEach(function(item) {
+                        itemOrder.push(item.getAttribute('data-id'));
+                    });
 
-					fetch('/reorder', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({ order: itemOrder }),
-					})
-					.then(response => response.json())
-					.then(data => {
-						console.log('Order saved:', data);
-					})
-					.catch((error) => {
-						console.error('Error:', error);
-					});
-				}
-			});
+                    fetch('/reorder', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ order: itemOrder }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Order saved:', data);
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                }
+            });
 
-			// --- 2. Hide/Unhide & Jump Logic ---
-			const toggleBtn = document.getElementById('toggle-completed-btn');
-			const jumpBtn = document.getElementById('jump-bottom-btn');
-			// We can reuse the 'el' variable since it's the exact same #task-list element
-			
-			let isHidden = false;
+            // --- 2. Hide/Unhide & Jump Logic ---
+            const toggleBtn = document.getElementById('toggle-completed-btn');
+            const jumpBtn = document.getElementById('jump-bottom-btn');
+            const toggleEmptyBtn = document.getElementById('toggle-empty-labels-btn'); // New button reference
+            
+            // We can reuse the 'el' variable since it's the exact same #task-list element
+            let isHidden = false;
+            let isEmptyHidden = true; // New state for empty labels
 
-			if (toggleBtn && jumpBtn && el) {
-				// Toggle visibility
-				toggleBtn.addEventListener('click', function() {
-					isHidden = !isHidden;
-					if (isHidden) {
-						el.classList.add('hide-completed');
-						toggleBtn.innerHTML = '👁️ Show Completed';
-					} else {
-						el.classList.remove('hide-completed');
-						toggleBtn.innerHTML = '👁️ Hide Completed';
-					}
-				});
+            if (toggleBtn && jumpBtn && el) {
+                // Toggle visibility
+                toggleBtn.addEventListener('click', function() {
+                    isHidden = !isHidden;
+                    if (isHidden) {
+                        el.classList.add('hide-completed');
+                        toggleBtn.innerHTML = '👁️ Show Completed';
+                    } else {
+                        el.classList.remove('hide-completed');
+                        toggleBtn.innerHTML = '👁️ Hide Completed';
+                    }
+                });
 
-				// Jump to last unfinished
-				jumpBtn.addEventListener('click', function() {
-					// Target tasks that do NOT have the completed class
-					const unfinishedTasks = el.querySelectorAll('.task-card:not(.completed)');
-					
-					if (unfinishedTasks.length > 0) {
-						// Get the absolute last pending task in the DOM
-						const lastUnfinished = unfinishedTasks[unfinishedTasks.length - 1];
-						
-						// Smoothly scroll it to the center of the viewport
-						lastUnfinished.scrollIntoView({ behavior: 'smooth', block: 'center' });
-						
-						// Briefly flash a purple highlight
-						lastUnfinished.classList.add('highlight-jump');
-						setTimeout(() => {
-							lastUnfinished.classList.remove('highlight-jump');
-						}, 1500);
-					}
-				});
-			}
-		});
+                // Jump to last unfinished
+                jumpBtn.addEventListener('click', function() {
+                    // Target tasks that do NOT have the completed class
+                    const unfinishedTasks = el.querySelectorAll('.task-card:not(.completed)');
+                    
+                    if (unfinishedTasks.length > 0) {
+                        // Get the absolute last pending task in the DOM
+                        const lastUnfinished = unfinishedTasks[unfinishedTasks.length - 1];
+                        
+                        // Smoothly scroll it to the center of the viewport
+                        lastUnfinished.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Briefly flash a purple highlight
+                        lastUnfinished.classList.add('highlight-jump');
+                        setTimeout(() => {
+                            lastUnfinished.classList.remove('highlight-jump');
+                        }, 1500);
+                    }
+                });
+            }
+
+            // --- 3. Toggle Empty Labels Logic ---
+            // Kept in a separate 'if' block just in case this button isn't rendered on a page,
+            // it won't break your jump and completed toggles!
+            if (toggleEmptyBtn) {
+                toggleEmptyBtn.addEventListener('click', function() {
+                    isEmptyHidden = !isEmptyHidden;
+                    if (isEmptyHidden) {
+                        document.body.classList.remove('show-empty-labels');
+                        toggleEmptyBtn.innerHTML = '🏷️ Show Empty Labels';
+                    } else {
+                        document.body.classList.add('show-empty-labels');
+                        toggleEmptyBtn.innerHTML = '🏷️ Hide Empty Labels';
+                    }
+                });
+            }
+        });
     </script>
 </head>
 <body>
@@ -391,7 +418,8 @@
 
 	<div class="action-buttons-container">
         <button id="toggle-completed-btn" class="action-btn">👁️ Hide Completed</button>
-        <button id="jump-bottom-btn" class="action-btn">⬇️ Jump to Last Unfinished</button>
+        <button id="toggle-empty-labels-btn" class="action-btn">🏷️ Show Empty Labels</button>
+        <button id="jump-bottom-btn" class="action-btn">⬇️ Last Unfinished</button>
     </div>
 
 	<div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
@@ -401,8 +429,9 @@
             <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Label</div>
             <div class="filter-bar" style="margin-bottom: 0;">
                 <a href="/?{% if active_assignee %}assignee={{ active_assignee }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if not active_filter }}">All ({{ total_active }})</a>
-                {% for lbl, count in all_labels %}
-                <a href="/?label={{ lbl }}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if active_filter == lbl }}">
+				{% for lbl, count in all_labels %}
+                <a href="/?label={{ lbl }}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" 
+                   class="filter-pill {{ 'active' if active_filter == lbl }} {{ 'empty-label' if count == 0 and active_filter != lbl else '' }}">
                     {{ lbl }} ({{ count }})
                 </a>
                 {% endfor %}
