@@ -44,8 +44,9 @@ class Task(db.Model):
     context = db.Column(db.Text, nullable=True)
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.datetime.now)
-    completed_at = db.Column(db.DateTime, nullable=True) 
+    created_at   = db.Column(db.DateTime, default=datetime.datetime.now)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    updated_at   = db.Column(db.DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
     @property
     def due_color(self):
@@ -118,6 +119,8 @@ def init_db(app):
             try: conn.execute(text("ALTER TABLE task ADD COLUMN context TEXT"))
             except: pass
             try: conn.execute(text("ALTER TABLE task ADD COLUMN assignee VARCHAR(50)"))
+            except: pass
+            try: conn.execute(text("ALTER TABLE task ADD COLUMN updated_at DATETIME"))
             except: pass
 
         # --- ONE-TIME DATA MIGRATION FOR LABELS ---

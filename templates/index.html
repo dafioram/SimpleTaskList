@@ -547,6 +547,7 @@
 
                 <div id="info-{{ task.id }}" class="task-info">
                     Created: {{ task.created_at.strftime('%b %d, %Y') }}<br>
+					Updated: {% if task.updated_at %}{{ task.updated_at.strftime('%b %d, %Y') }}{% else %}N/A{% endif %}<br>
                     Due: {% if task.due_date %}{{ task.due_date }}{% else %}N/A{% endif %}<br>
                     Assignee: {% if task.assignee %}{{ task.assignee }}{% else %}Unassigned{% endif %}
                 </div>
