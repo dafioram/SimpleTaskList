@@ -23,6 +23,10 @@ os.makedirs(data_dir, exist_ok=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY')
+
+if not app.config['SECRET_KEY']:
+    app.config['SECRET_KEY'] = 'change-me'
 
 # Initialize the database and run migrations
 init_db(app)
