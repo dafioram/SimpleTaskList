@@ -18,4 +18,5 @@ EXPOSE 5000
 
 # Run the app
 # This tells the container to use the PORT variable defined in your .env or docker-compose
-CMD ["sh", "-c", "python main.py"]
+# CMD ["sh", "-c", "python run.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
