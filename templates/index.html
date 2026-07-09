@@ -93,6 +93,23 @@
             color: #888888 !important;
         }
 
+        /* --- Search Bar Styling --- */
+        .search-container {
+            margin-bottom: 15px;
+        }
+        .search-input {
+            width: 100%; padding: 12px 15px; border-radius: 8px; 
+            border: 1px solid #333; background: #1e1e1e; color: white; 
+            font-size: 15px; outline: none; box-sizing: border-box; 
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            border-color: #bb86fc;
+        }
+        .hidden-by-search {
+            display: none !important;
+        }
+
         /* --- Task Card --- */
         .task-card {
             background-color: #1e1e1e; padding: 12px 15px; margin-bottom: 10px; 
@@ -449,6 +466,62 @@
                     }
                 });
             }
+
+            // --- 4. Search Filter Logic (Smart Search OR) ---
+            const searchInput = document.getElementById('task-search');
+            if (searchInput && el) {
+                searchInput.addEventListener('input', function(e) {
+                    // Lowercase and remove leading/trailing spaces
+                    const searchTerm = e.target.value.toLowerCase().trim();
+                    const tasks = el.querySelectorAll('.task-card');
+
+                    tasks.forEach(task => {
+                        const taskId = task.getAttribute('data-id') || "";
+                        
+                        const titleEl = task.querySelector('.task-text');
+                        const titleText = titleEl ? titleEl.textContent.toLowerCase() : "";
+                        
+                        const contextEl = task.querySelector('.task-context');
+                        const contextText = contextEl ? contextEl.textContent.toLowerCase() : "";
+
+                        let isMatch = false;
+
+                        // RULE 1: If search starts with "#", ONLY search Task IDs
+                        if (searchTerm.startsWith('#')) {
+                            const searchId = searchTerm.substring(1).trim();
+                            
+                            if (searchId === "") {
+                                isMatch = true; // If they just typed "#", show everything until they type a number
+                            } else {
+                                isMatch = taskId.startsWith(searchId); 
+                            }
+                        } 
+                        // RULE 2: Standard smart text search (OR logic)
+                        else {
+                            // Split the search string into an array of separate words
+                            const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+                            
+                            if (searchWords.length === 0) {
+                                isMatch = true; // Show all if search is empty
+                            } else {
+                                // .some() ensures the task shows if it contains ANY of the words typed
+                                isMatch = searchWords.some(word => {
+                                    return taskId.includes(word) || 
+                                           titleText.includes(word) || 
+                                           contextText.includes(word);
+                                });
+                            }
+                        }
+
+                        // Apply visibility class based on match result
+                        if (isMatch) {
+                            task.classList.remove('hidden-by-search');
+                        } else {
+                            task.classList.add('hidden-by-search');
+                        }
+                    });
+                });
+            }
         });
     </script>
 </head>
@@ -526,6 +599,11 @@
             <div style="width: 85px;"></div>
         </div>
         
+    </div>
+
+    <!-- The New Search Bar -->
+    <div class="search-container">
+        <input type="text" id="task-search" class="search-input" placeholder="🔍 Search tasks by title, details, or ID..." autocomplete="off">
     </div>
 
     <div id="task-list">
