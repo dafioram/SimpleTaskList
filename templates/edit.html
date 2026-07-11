@@ -203,9 +203,9 @@
                 </div>
 
                 <div class="form-group" style="margin-top: 15px;">
-                    <label>Parent Task (Optional):</label>
+                    <label>Subtask of (Optional):</label>
                     <select name="parent_id" class="small-input">
-                        <option value="">No Parent</option>
+                        <option value="">None (Standalone Task)</option>
                         {% for t in all_tasks %}
                             {% if t.id != task.id %}
                                 <option value="{{ t.id }}" {% if task.parent_id == t.id %}selected{% endif %}>
