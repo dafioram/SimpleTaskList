@@ -202,19 +202,21 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 15px;">
-                    <label>Subtask of (Optional):</label>
-                    <select name="parent_id" class="small-input">
-                        <option value="">None (Standalone Task)</option>
-                        {% for t in all_tasks %}
-                            {% if t.id != task.id %}
-                                <option value="{{ t.id }}" {% if task.parent_id == t.id %}selected{% endif %}>
-                                    #{{ t.id }} — {{ t.content[:40] }}
-                                </option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
+				<div class="form-group" style="margin-top: 15px;">
+					<label>Dependencies (Must be done before this task):</label>
+					<select name="dependency_ids" class="small-input" multiple style="height: 110px; padding: 8px;">
+						{% for t in all_tasks %}
+							{% if t.id != task.id %}
+								<option value="{{ t.id }}" {% if t.id in dependency_ids %}selected{% endif %}>
+									#{{ t.id }} — {{ t.content[:40] }}
+								</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+					<span style="font-size: 0.7rem; color: #555; display: block; margin-top: 4px; text-transform: none; letter-spacing: normal;">
+						Hold Ctrl (or Cmd on Mac) to select or unselect multiple prerequisites.
+					</span>
+				</div>
 
                 {% if task.completed_at %}
                 <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">

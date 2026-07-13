@@ -6,7 +6,7 @@ import shutil
 from datetime import datetime
 import json
 
-from database import db, Task, Label, init_db, perform_backup
+from database import db, Task, Label, TaskRelationship, init_db, perform_backup
 
 app = Flask(__name__)
 
@@ -23,18 +23,38 @@ os.makedirs(data_dir, exist_ok=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY')
-
-if not app.config['SECRET_KEY']:
-    app.config['SECRET_KEY'] = 'change-me'
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY') or 'change-me'
 
 # Initialize the database and run migrations
 init_db(app)
 
 # --- HELPER FUNCTIONS ---
 
+def would_cause_cycle(task_id, proposed_prereq_id):
+    """
+    Traces dependency links using BFS to verify if making 'proposed_prereq_id'
+    a prerequisite of 'task_id' would introduce a circular dependency.
+    """
+    if task_id == proposed_prereq_id:
+        return True
+        
+    visited = set()
+    queue = [proposed_prereq_id]
+    
+    while queue:
+        current = queue.pop(0)
+        if current == task_id:
+            return True
+        if current not in visited:
+            visited.add(current)
+            # Find everything that 'current' depends on
+            rels = TaskRelationship.query.filter_by(task_id=current, relationship_type='dependency').all()
+            for r in rels:
+                if r.related_task_id not in visited:
+                    queue.append(r.related_task_id)
+    return False
+
 def get_assignee_colors(unique_assignees):
-    """Generates consistent colors for assignees using a hash."""
     PALETTE = [
         '#d0bcff', '#448aff', '#69f0ae', '#ffab40', '#ff5252', 
         '#ff80ab', '#64ffda', '#536dfe', '#f44336', '#e91e63', 
@@ -49,56 +69,60 @@ def get_assignee_colors(unique_assignees):
     return colors
 
 def get_label_colors(unique_labels):
-    """Generates consistent CSS classes for labels using a salted hash."""
     LABEL_PALETTE = ['purple', 'blue', 'green', 'orange', 'red', 'pink', 'teal', 'yellow', 'indigo']
     colors = {}
     for lbl in unique_labels:
         if not lbl: continue
-        # Multiplying by 17 ensures "Maggie" the label is a different color than "Maggie" the assignee
         hash_val = sum(ord(c) * (i + 1) * 17 for i, c in enumerate(lbl))
         colors[lbl] = LABEL_PALETTE[hash_val % len(LABEL_PALETTE)]
     return colors
 
 def update_task_labels(task, tagify_json_string):
-    """Parses Tagify JSON and updates the task.labels relationship."""
     task.labels.clear()
     if not tagify_json_string:
         return
-    
     try:
-        # Tagify sends data as: [{"value": "Label1"}, {"value": "Label2"}]
         parsed_data = json.loads(tagify_json_string)
         for item in parsed_data:
             name = item.get('value', '').strip().title()
-            
-            # --- RESERVED KEYWORD CHECK ---
-            # If they try to name a label "All", ignore it and move to the next item
             if name.lower() == 'all':
                 continue
-                
             if name:
-                # Find or create the label
                 lbl = Label.query.filter_by(name=name).first()
                 if not lbl:
                     lbl = Label(name=name)
                     db.session.add(lbl)
                 task.labels.append(lbl)
     except json.JSONDecodeError:
-        pass # Handle empty or malformed strings gracefully
+        pass
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
     all_tasks_raw = Task.query.all()
+    task_map = {t.id: t for t in all_tasks_raw}
     
-    # Build a map of parent_id -> list of child tasks for the UI
+    # Build children_map using TaskRelationship instead of legacy parent_id
+    # map key = prerequisite task ID, value = list of tasks blocked by it
     children_map = {}
-    for t in all_tasks_raw:
-        if t.parent_id:
-            if t.parent_id not in children_map:
-                children_map[t.parent_id] = []
-            children_map[t.parent_id].append(t)
+    dependencies_map = {}  # 1. Initialize the missing map
+    all_dependencies = TaskRelationship.query.filter_by(relationship_type='dependency').all()
+    
+    for rel in all_dependencies:
+        p_id = rel.related_task_id  # The prerequisite task
+        c_id = rel.task_id          # The blocked task
+        
+        if p_id in task_map and c_id in task_map:
+            # Build children_map (Prereq -> Blocked)
+            if p_id not in children_map:
+                children_map[p_id] = []
+            children_map[p_id].append(task_map[c_id])
+            
+            # 2. Build dependencies_map (Task -> Prereqs)
+            if c_id not in dependencies_map:
+                dependencies_map[c_id] = []
+            dependencies_map[c_id].append(task_map[p_id])
 
     filter_label = request.args.get('label')
     filter_assignee = request.args.get('assignee')
@@ -113,7 +137,6 @@ def index():
     for t in all_tasks_raw:
         if t.completed_at is None:
             total_active += 1
-            
             if t.due_date and t.due_date.strip() != "":
                 due_count += 1
 
@@ -127,23 +150,18 @@ def index():
             unique_assignees.add(t.assignee)
 
     query = Task.query
-
     if filter_label:
-        from database import Label
         query = query.filter(Task.labels.any(Label.name == filter_label))
-        
     if filter_assignee:
         if filter_assignee == 'Unassigned':
             query = query.filter((Task.assignee == None) | (Task.assignee == ''))
         else:
             query = query.filter(Task.assignee == filter_assignee)
-        
     if filter_due == '1': 
         query = query.filter(Task.due_date.isnot(None)).filter(Task.due_date != "")
         
     tasks = query.all()
     
-    from database import Label
     all_labels_query = Label.query.order_by(Label.name).all()
     unique_labels_list = [l.name for l in all_labels_query]
     
@@ -151,7 +169,6 @@ def index():
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
     unassigned_count = assignee_counts.get("Unassigned", 0)
 
-    # Use the shared helper functions
     assignee_colors = get_assignee_colors(unique_assignees)
     label_colors = get_label_colors(unique_labels_list)
 
@@ -169,18 +186,15 @@ def index():
                            active_assignee=filter_assignee,
                            active_due=filter_due,
                            children_map=children_map,
+                           dependencies_map=dependencies_map,
                            unique_labels_list=unique_labels_list,
                            due_count=due_count,
                            total_active=total_active)
 
-@app.route('/sw.js')
-def service_worker():
-    return send_from_directory('static', 'sw.js', mimetype='application/javascript')
-
 @app.route('/add', methods=['POST'])
 def add_task():
     content = request.form.get('content')
-    raw_labels = request.form.get('label') # Tagify string
+    raw_labels = request.form.get('label')
 
     if content:
         min_pos = db.session.query(db.func.min(Task.position)).scalar()
@@ -188,10 +202,7 @@ def add_task():
         
         new_task = Task(content=content, position=new_pos, color='default')
         db.session.add(new_task)
-        
-        # --> Handle multiple labels
         update_task_labels(new_task, raw_labels)
-        
         db.session.commit()
     return redirect(url_for('index'))
 
@@ -206,41 +217,15 @@ def edit_task(id):
         raw_labels = request.form.get('label')
         update_task_labels(task, raw_labels)
         
-        # --- RESERVED ASSIGNEE CHECK ---
         raw_assignee = request.form.get('assignee')
         if raw_assignee and (raw_assignee.strip().lower() != 'anyone' and raw_assignee.strip().lower() != 'unassigned'):
             task.assignee = raw_assignee.strip().title()
         else:
-            task.assignee = None  # Reverts to "Unassigned" fallback cleanly
+            task.assignee = None
 
         dd = request.form.get('due_date')
         task.due_date = dd if dd else None
         
-        # --- PARENT ID / INFINITE LOOP PREVENTION ---
-        parent_id_raw = request.form.get('parent_id')
-        if parent_id_raw and parent_id_raw.isdigit():
-            pid_int = int(parent_id_raw)
-            parent_task = db.session.get(Task, pid_int)
-            
-            if parent_task and pid_int != task.id:
-                # Walk up the tree to ensure we don't create a circular dependency
-                circular = False
-                curr = parent_task
-                while curr:
-                    if curr.id == task.id:
-                        circular = True
-                        break
-                    curr = db.session.get(Task, curr.parent_id) if curr.parent_id else None
-                
-                if not circular:
-                    task.parent_id = pid_int
-                else:
-                    task.parent_id = None
-            else:
-                task.parent_id = None
-        else:
-            task.parent_id = None
-
         ctxt = request.form.get('context')
         task.context = ctxt if ctxt else None
 
@@ -248,10 +233,29 @@ def edit_task(id):
             note = request.form.get('completion_note')
             task.completion_note = note if note else None
 
+        # --- SYNC DEPENDENCIES ---
+        TaskRelationship.query.filter_by(task_id=task.id, relationship_type='dependency').delete()
+        
+        # Matches the 'name' attribute in our new edit.html <select>
+        dependency_ids_raw = request.form.getlist('dependency_ids')
+        for pid_str in dependency_ids_raw:
+            if pid_str and pid_str.isdigit():
+                pid_int = int(pid_str)
+                # Ensure no self-referencing and trace for cycles before saving
+                if pid_int != task.id and not would_cause_cycle(task.id, pid_int):
+                    new_rel = TaskRelationship(
+                        task_id=task.id,
+                        related_task_id=pid_int,
+                        relationship_type='dependency'
+                    )
+                    db.session.add(new_rel)
+
         db.session.commit()
         return redirect(url_for('index'))
 
+    # GET requests processing
     all_tasks_raw = Task.query.all()
+    
     label_counts = {}
     assignee_counts = {}
     unique_assignees = set()
@@ -260,8 +264,6 @@ def edit_task(id):
     for t in all_tasks_raw:
         if t.completed_at is None:
             total_active += 1
-            
-            # --> UPDATED LOOP: Iterate over the new labels relationship
             for lbl in t.labels:
                 label_counts[lbl.name] = label_counts.get(lbl.name, 0) + 1
             
@@ -271,20 +273,22 @@ def edit_task(id):
         if t.assignee:
             unique_assignees.add(t.assignee)
 
-    from database import Label
     all_labels_query = Label.query.order_by(Label.name).all()
     unique_labels_list = [l.name for l in all_labels_query]
     
     all_labels = [(lbl, label_counts.get(lbl, 0)) for lbl in unique_labels_list]
     all_assignees = [(a, assignee_counts.get(a, 0)) for a in sorted(list(unique_assignees))]
     unassigned_count = assignee_counts.get("Unassigned", 0)
-
-    # Use the shared helper functions
     assignee_colors = get_assignee_colors(unique_assignees)
+
+    # Fetch currently assigned dependencies to select them in the HTML dropdown
+    current_deps = TaskRelationship.query.filter_by(task_id=id, relationship_type='dependency').all()
+    dependency_ids = [r.related_task_id for r in current_deps]
 
     return render_template('edit.html', 
                            task=task,
                            all_tasks=all_tasks_raw,
+                           dependency_ids=dependency_ids,  # Passed directly to jinja
                            all_labels=all_labels,
                            all_assignees=all_assignees,
                            unassigned_count=unassigned_count,
@@ -320,9 +324,10 @@ def reorder_tasks():
 def delete_task(id):
     task = db.session.get(Task, id)
     if task:
-        # Orphan management: reset children of deleted task
-        children = Task.query.filter_by(parent_id=task.id).all()
-        for child in children: child.parent_id = None
+        # Clean up any relationship records pointing to or from this task to keep tables clean
+        TaskRelationship.query.filter(
+            (TaskRelationship.task_id == task.id) | (TaskRelationship.related_task_id == task.id)
+        ).delete()
         
         db.session.delete(task)
         db.session.commit()
@@ -350,7 +355,6 @@ def api_health():
 @app.route('/api/backup', methods=['POST'])
 def api_backup():
     expected_api_key = os.environ.get('API_BACKUP_KEY')
-    
     if not expected_api_key:
         return jsonify({"status": "error", "message": "Backup API key not configured on server."}), 403
         
@@ -363,3 +367,7 @@ def api_backup():
         return jsonify({"status": "success", "message": "Database backup completed.", "file": result}), 200
     else:
         return jsonify({"status": "error", "message": "Backup failed.", "error_details": result}), 500
+
+@app.route('/sw.js')
+def service_worker():
+    return send_from_directory('static', 'sw.js', mimetype='application/javascript')

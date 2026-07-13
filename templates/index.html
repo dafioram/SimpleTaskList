@@ -626,27 +626,26 @@
                     
                     <button id="btn-info-{{ task.id }}" class="info-toggle" onclick="toggleInfo({{ task.id }})" title="Task Metadata">ⓘ</button>
                     
-{% if children_map.get(task.id) %}
-    {% set children = children_map[task.id] | sort(attribute='id') %}
-    {% set all_done = children | selectattr('completed_at') | list | length == children | length %}
+{% if dependencies_map.get(task.id) %}
+    {% set prereqs = dependencies_map[task.id] | sort(attribute='id') %}
+    {% set all_done = prereqs | selectattr('completed_at') | list | length == prereqs | length %}
 
     {% set ids = [] %}
-    {% for child in children %}
+    {% for req in prereqs %}
 
         {% if all_done %}
             {# Everything complete → full strike #}
             {% set _ = ids.append(
-                '<span class="strike-high">#' ~ child.id ~ '</span>'
+                '<span class="strike-high">#' ~ req.id ~ '</span>'
             ) %}
-
         {% else %}
-            {% if child.completed_at %}
+            {% if req.completed_at %}
                 {# Partial complete → diagonal slash #}
                 {% set _ = ids.append(
-                    '<span class="diag-slash">#' ~ child.id ~ '</span>'
+                    '<span class="diag-slash">#' ~ req.id ~ '</span>'
                 ) %}
             {% else %}
-                {% set _ = ids.append('#' ~ child.id) %}
+                {% set _ = ids.append('#' ~ req.id) %}
             {% endif %}
         {% endif %}
 
