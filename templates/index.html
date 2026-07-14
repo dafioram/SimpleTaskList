@@ -106,9 +106,38 @@
         .search-input:focus {
             border-color: #bb86fc;
         }
+		
         .hidden-by-search {
             display: none !important;
         }
+		
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    width: 100%;
+    padding-right: 40px; /* Room for the X button */
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #777;
+    cursor: pointer;
+    display: none;
+    padding: 0;
+    line-height: 1;
+}
+
+.clear-search-btn:hover {
+    color: #000;
+}
 
         /* --- Task Card --- */
         .task-card {
@@ -601,10 +630,26 @@
         
     </div>
 
-    <!-- The New Search Bar -->
-    <div class="search-container">
-        <input type="text" id="task-search" class="search-input" placeholder="🔍 Search tasks by title, details, or ID..." autocomplete="off">
+<!-- The New Search Bar -->
+<div class="search-container">
+    <div class="search-wrapper">
+        <input
+            type="text"
+            id="task-search"
+            class="search-input"
+            placeholder="🔍 Search tasks by title, details, or ID..."
+            autocomplete="off"
+        >
+        <button
+            type="button"
+            id="clear-search"
+            class="clear-search-btn"
+            aria-label="Clear search"
+        >
+            &times;
+        </button>
     </div>
+</div>
 
     <div id="task-list">
         {% for task in tasks %}
@@ -707,6 +752,37 @@
         {% endfor %}
     </div>
 <script src="{{ url_for('static', filename='js/tagify.js') }}"></script>
+<script>
+const searchInput = document.getElementById('task-search');
+const clearButton = document.getElementById('clear-search');
+
+function updateClearButton() {
+    clearButton.style.display = searchInput.value ? 'block' : 'none';
+}
+
+searchInput.addEventListener('input', () => {
+    updateClearButton();
+
+    // Your existing search/filter function here
+    // filterTasks(searchInput.value);
+});
+
+clearButton.addEventListener('click', () => {
+    searchInput.value = '';
+    updateClearButton();
+
+    // Re-run the search so all tasks are shown again
+    // filterTasks('');
+
+    searchInput.focus();
+
+    // If your search listens for the input event instead:
+    searchInput.dispatchEvent(new Event('input'));
+});
+
+// Initialize on page load
+updateClearButton();
+</script>
 <script>
     // Initialize Tagify
     var inputElement = document.querySelector('.tagify-input');
