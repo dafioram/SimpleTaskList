@@ -127,6 +127,7 @@ def index():
     filter_label = request.args.get('label')
     filter_assignee = request.args.get('assignee')
     filter_due = request.args.get('due_only')
+    rel_filter = request.args.get('rel')
 
     label_counts = {}
     assignee_counts = {}
@@ -175,6 +176,13 @@ def index():
     active_tasks = sorted([t for t in tasks if t.completed_at is None], key=lambda t: t.position)
     finished_tasks = sorted([t for t in tasks if t.completed_at is not None], key=lambda t: t.completed_at, reverse=True)
 
+    if rel_filter == 'requires':
+        # Only keep tasks that are keys in dependencies_map
+        active_tasks = [t for t in active_tasks if t.id in dependencies_map]
+    elif rel_filter == 'blocks':
+        # Only keep tasks that are keys in children_map (the blockers)
+        active_tasks = [t for t in active_tasks if t.id in children_map]
+
     return render_template('index.html', 
                            tasks=active_tasks + finished_tasks, 
                            all_labels=all_labels, 
@@ -185,6 +193,7 @@ def index():
                            active_filter=filter_label,
                            active_assignee=filter_assignee,
                            active_due=filter_due,
+                           active_rel=rel_filter,
                            children_map=children_map,
                            blocks_map=children_map, # <--- Add this line
                            dependencies_map=dependencies_map,

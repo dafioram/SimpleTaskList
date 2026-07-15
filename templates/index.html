@@ -629,6 +629,19 @@
         </div>
         
     </div>
+	<div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px; margin-bottom: 12px;">
+		<div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Dependency Status</div>
+		<div class="filter-bar" style="margin-bottom: 0;">
+			{% set base_url = "/?1=1" %}
+			{% if active_filter %}{% set base_url = base_url ~ "&label=" ~ active_filter %}{% endif %}
+			{% if active_assignee %}{% set base_url = base_url ~ "&assignee=" ~ active_assignee %}{% endif %}
+			{% if active_due %}{% set base_url = base_url ~ "&due_only=" ~ active_due %}{% endif %}
+
+			<a href="{{ base_url }}" class="filter-pill {{ 'active' if not active_rel }}">All</a>
+			<a href="{{ base_url }}&rel=requires" class="filter-pill {{ 'active' if active_rel == 'requires' }}">Requires</a>
+			<a href="{{ base_url }}&rel=blocks" class="filter-pill {{ 'active' if active_rel == 'blocks' }}">Blocking</a>
+		</div>
+	</div>
 
 <!-- The New Search Bar -->
 <div class="search-container">
