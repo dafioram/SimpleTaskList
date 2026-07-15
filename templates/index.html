@@ -651,7 +651,7 @@
     </div>
 </div>
 
-    <div id="task-list">
+	<div id="task-list">
         {% for task in tasks %}
             <div class="task-card border-{{ task.due_color }} {{ 'completed' if task.completed_at else '' }}" data-id="{{ task.id }}">
             
@@ -701,6 +701,39 @@
             Requires:
         </span>
         {{ ids | join(', ') | safe }}
+    </span>
+{% endif %}
+
+{% if blocks_map.get(task.id) %}
+    {% set blocked = blocks_map[task.id] | sort(attribute='id') %}
+    {% set all_blocked_done = blocked | selectattr('completed_at') | list | length == blocked | length %}
+
+    {% set b_ids = [] %}
+    {% for b_req in blocked %}
+
+        {% if all_blocked_done %}
+            {# Everything complete → full strike #}
+            {% set _ = b_ids.append(
+                '<span class="strike-high">#' ~ b_req.id ~ '</span>'
+            ) %}
+        {% else %}
+            {% if b_req.completed_at %}
+                {# Partial complete → diagonal slash #}
+                {% set _ = b_ids.append(
+                    '<span class="diag-slash">#' ~ b_req.id ~ '</span>'
+                ) %}
+            {% else %}
+                {% set _ = b_ids.append('#' ~ b_req.id) %}
+            {% endif %}
+        {% endif %}
+
+    {% endfor %}
+
+    <span class="{{ 'dep-done' if all_blocked_done else 'dep-active' }}">
+        • <span class="{% if all_blocked_done %}strike-high{% endif %}">
+            Blocks:
+        </span>
+        {{ b_ids | join(', ') | safe }}
     </span>
 {% endif %}
 

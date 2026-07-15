@@ -186,6 +186,7 @@ def index():
                            active_assignee=filter_assignee,
                            active_due=filter_due,
                            children_map=children_map,
+                           blocks_map=children_map, # <--- Add this line
                            dependencies_map=dependencies_map,
                            unique_labels_list=unique_labels_list,
                            due_count=due_count,
