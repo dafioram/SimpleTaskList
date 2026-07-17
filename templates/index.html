@@ -572,11 +572,13 @@
     </div>
 
     <div class="action-buttons-container">
-        <button id="toggle-completed-btn" class="action-btn">👁️ Hide Completed</button>
+		<button id="toggle-filters-btn" class="action-btn">⚙️ Toggle Filters</button>
+        <!-- <button id="toggle-completed-btn" class="action-btn">👁️ Hide Completed</button> -->
         <button id="toggle-empty-labels-btn" class="action-btn">🏷️ Show Empty Labels</button>
         <button id="jump-bottom-btn" class="action-btn">⬇️ Last Unfinished</button>
     </div>
 
+	<div id="filter-sections-wrapper" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
     <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
         
         {% if all_labels %}
@@ -642,8 +644,8 @@
 			<a href="{{ base_url }}&rel=blocks" class="filter-pill {{ 'active' if active_rel == 'blocks' }}">Blocking</a>
 		</div>
 	</div>
+	</div>
 
-<!-- The New Search Bar -->
 <div class="search-container">
     <div class="search-wrapper">
         <input
@@ -828,6 +830,42 @@ clearButton.addEventListener('click', () => {
 
 // Initialize on page load
 updateClearButton();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const filterWrapper = document.getElementById('filter-sections-wrapper');
+    const toggleBtn = document.getElementById('toggle-filters-btn');
+
+    if (!filterWrapper || !toggleBtn) return;
+
+    const filtersHidden = localStorage.getItem('hideTaskFilters') === 'true';
+    if (filtersHidden) {
+        filterWrapper.style.display = 'none';
+        toggleBtn.style.opacity = '0.7'; 
+    }
+
+    toggleBtn.addEventListener('click', () => {
+        if (filterWrapper.style.display === 'none') {
+            // 1. OPENING: Just show the UI
+            filterWrapper.style.display = 'flex';
+            toggleBtn.style.opacity = '1';
+            localStorage.setItem('hideTaskFilters', 'false');
+        } else {
+            // 2. CLOSING: Hide UI and clear filters
+            localStorage.setItem('hideTaskFilters', 'true');
+            
+            // If the URL has query parameters (meaning filters are active),
+            // redirect to the base URL to clear them.
+            if (window.location.search) {
+                window.location.href = '/'; 
+            } else {
+                // If no filters were active anyway, just hide the div
+                filterWrapper.style.display = 'none';
+                toggleBtn.style.opacity = '0.7';
+            }
+        }
+    });
+});
 </script>
 <script>
     // Initialize Tagify
