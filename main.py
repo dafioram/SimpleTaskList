@@ -320,6 +320,15 @@ def toggle_task(id):
         db.session.commit()
     return redirect(url_for('index'))
 
+@app.route('/promote/<int:id>', methods=['POST'])
+def promote_task(id):
+    task = db.session.get(Task, id)
+    if task:
+        min_pos = db.session.query(db.func.min(Task.position)).scalar()
+        task.position = (min_pos - 1) if min_pos is not None else 0
+        db.session.commit()
+    return redirect(url_for('index'))
+
 @app.route('/reorder', methods=['POST'])
 def reorder_tasks():
     data = request.get_json()
