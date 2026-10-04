@@ -1,8 +1,0 @@
-# Pinned versions; all install on Python 3.9 and newer. Bump deliberately and retest.
-# (gunicorn 24+ needs Python 3.10, so it stays on 23.x for older Raspberry Pi OS.)
-flask==3.1.3
-werkzeug==3.1.9
-jinja2==3.1.6
-flask-sqlalchemy==3.1.1
-sqlalchemy==2.0.54
-gunicorn==23.0.0
