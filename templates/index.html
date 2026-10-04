@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ url_for('static', filename='css/tagify.css') }}" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="{{ url_for('static', filename='vendor/Sortable.min.js') }}"></script>
     <title>Task List</title>
     <style>
         body {
@@ -415,11 +415,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             // --- 1. Drag and Drop Sorting Logic ---
             var el = document.getElementById('task-list');
-            var sortable = Sortable.create(el, {
+            if (window.Sortable && el) Sortable.create(el, {
                 handle: '.drag-handle', 
                 animation: 150, 
                 ghostClass: 'sortable-ghost', 
                 filter: '.completed', 
+                // Don't let an active task be dropped among the completed ones
+                onMove: function (evt) {
+                    return !evt.related.classList.contains('completed');
+                },
                 
                 onEnd: function (evt) {
                     var itemOrder = [];
@@ -436,12 +440,14 @@
                         },
                         body: JSON.stringify({ order: itemOrder }),
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Order saved:', data);
+                    .then(response => {
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        return response.json();
                     })
                     .catch((error) => {
-                        console.error('Error:', error);
+                        console.error('Error saving order:', error);
+                        alert('Could not save the new order. The list will reload.');
+                        location.reload();
                     });
                 }
             });
@@ -566,16 +572,14 @@
 <body>
 
     <div class="add-container">
-        <form action="/add" method="POST">
+        <form action="{{ url_for('add_task') }}" method="POST">
             <div class="form-row-main">
                 <input type="text" name="content" placeholder="Add a task..." required autocomplete="off">
                 <button type="submit" class="add-btn">+</button>
             </div>
             
             <div class="form-row-details">
-                <input name="label" class="tagify-input" 
-                    value="{% if task %}{{ task.labels|map(attribute='name')|join(',') }}{% endif %}" 
-                    placeholder="Add labels...">
+                <input name="label" class="tagify-input" placeholder="Add labels...">
             </div>
         </form>
     </div>
@@ -595,9 +599,9 @@
         <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
             <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Label</div>
             <div class="filter-bar" style="margin-bottom: 0;">
-                <a href="/?{% if active_assignee %}assignee={{ active_assignee }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if not active_filter }}">All ({{ total_active }})</a>
+                <a href="{{ filter_url(label=None) }}" class="filter-pill {{ 'active' if not active_filter }}">All ({{ total_active }})</a>
                 {% for lbl, count in all_labels %}
-                <a href="/?label={{ lbl }}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" 
+                <a href="{{ filter_url(label=lbl) }}" 
                    class="filter-pill {{ 'active' if active_filter == lbl }} {{ 'empty-label' if count == 0 and active_filter != lbl else '' }}">
                     {{ lbl }} ({{ count }})
                 </a>
@@ -610,17 +614,17 @@
         <div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px;">
             <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Filter by Person</div>
             <div class="filter-bar" style="margin-bottom: 0;">
-                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if not active_assignee }}">Anyone</a>
+                <a href="{{ filter_url(assignee=None) }}" class="filter-pill {{ 'active' if not active_assignee }}">Anyone</a>
                 
                 {% for a, count in all_assignees %}
-                <a href="/?assignee={{ a }}{% if active_filter %}&label={{ active_filter }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == a }}">
+                <a href="{{ filter_url(assignee=a) }}" class="filter-pill {{ 'active' if active_assignee == a }}">
                     <span class="avatar-small" style="background-color: {{ assignee_colors[a] }}">{{ a[0]|upper }}</span> 
                     {{ a }} ({{ count }})
                 </a>
                 {% endfor %}
                 
                 {% if unassigned_count > 0 or active_assignee == 'Unassigned' %}
-                <a href="/?assignee=Unassigned{% if active_filter %}&label={{ active_filter }}{% endif %}{% if active_due %}&due_only={{ active_due }}{% endif %}" class="filter-pill {{ 'active' if active_assignee == 'Unassigned' }}">
+                <a href="{{ filter_url(assignee='Unassigned') }}" class="filter-pill {{ 'active' if active_assignee == 'Unassigned' }}">
                     <span class="avatar-small" style="background-color: #555; color: #aaa;">?</span> 
                     Unassigned ({{ unassigned_count }})
                 </a>
@@ -632,8 +636,8 @@
     <div style="background: #1e1e1e; padding: 6px 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
             <div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; user-select: none; width: 85px;">Due Date</div>
             <div class="filter-bar" style="display: flex; margin-bottom: 0; gap: 6px;">
-                <a href="/?{% if active_filter %}label={{ active_filter }}{% endif %}{% if active_assignee %}&assignee={{ active_assignee }}{% endif %}" class="filter-pill {{ 'active' if active_due != '1' }}" style="padding: 4px 12px; font-size: 0.8rem;">All</a>
-                <a href="?due_only=1" class="filter-pill flex items-center {{ 'active' if active_due == '1' }}">Due Only
+                <a href="{{ filter_url(due_only=None) }}" class="filter-pill {{ 'active' if active_due != '1' }}" style="padding: 4px 12px; font-size: 0.8rem;">All</a>
+                <a href="{{ filter_url(due_only='1') }}" class="filter-pill flex items-center {{ 'active' if active_due == '1' }}">Due Only
                     <span style="margin-left: 4px;"> ({{ due_count }})</span>
                 </a>
             </div>
@@ -644,14 +648,9 @@
 	<div style="background: #1e1e1e; padding: 12px 15px; border-radius: 12px; margin-bottom: 12px;">
 		<div style="font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Dependency Status</div>
 		<div class="filter-bar" style="margin-bottom: 0;">
-			{% set base_url = "/?1=1" %}
-			{% if active_filter %}{% set base_url = base_url ~ "&label=" ~ active_filter %}{% endif %}
-			{% if active_assignee %}{% set base_url = base_url ~ "&assignee=" ~ active_assignee %}{% endif %}
-			{% if active_due %}{% set base_url = base_url ~ "&due_only=" ~ active_due %}{% endif %}
-
-			<a href="{{ base_url }}" class="filter-pill {{ 'active' if not active_rel }}">All</a>
-			<a href="{{ base_url }}&rel=requires" class="filter-pill {{ 'active' if active_rel == 'requires' }}">Requires</a>
-			<a href="{{ base_url }}&rel=blocks" class="filter-pill {{ 'active' if active_rel == 'blocks' }}">Blocking</a>
+			<a href="{{ filter_url(rel=None) }}" class="filter-pill {{ 'active' if not active_rel }}">All</a>
+			<a href="{{ filter_url(rel='requires') }}" class="filter-pill {{ 'active' if active_rel == 'requires' }}">Requires</a>
+			<a href="{{ filter_url(rel='blocks') }}" class="filter-pill {{ 'active' if active_rel == 'blocks' }}">Blocking</a>
 		</div>
 	</div>
 	</div>
@@ -683,14 +682,14 @@
             <div class="drag-handle">⋮⋮</div>
 
 			<div class="left-actions-column">
-                <form action="/toggle/{{ task.id }}" method="POST" style="margin: 0;">
+                <form action="{{ url_for('toggle_task', id=task.id) }}" method="POST" style="margin: 0;">
                     <button type="submit" class="toggle-btn">
                         ✓
                     </button>
                 </form>
 
                 {% if not task.completed_at %}
-                <form action="/promote/{{ task.id }}" method="POST" style="margin-top: auto; padding-top: 16px; margin-bottom: 0;">
+                <form action="{{ url_for('promote_task', id=task.id) }}" method="POST" style="margin-top: auto; padding-top: 16px; margin-bottom: 0;">
                     <button type="submit" class="icon-btn" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 0.85rem;" title="Promote to Top">▲</button>
                 </form>
                 {% endif %}
@@ -812,7 +811,7 @@
                         {{ task.assignee[0] | upper }}
                     </div>
                 {% endif %}
-                <a href="/edit/{{ task.id }}" class="icon-btn">✎</a>
+                <a href="{{ url_for('edit_task', id=task.id) }}" class="icon-btn" title="Edit">✎</a>
             </div>
         </div>
         {% endfor %}

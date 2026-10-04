@@ -121,6 +121,7 @@
         .btn {
             flex: 1; padding: 12px; border: none; border-radius: 8px;
             font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none;
+            font-family: inherit;
         }
         .save-btn { background-color: #bb86fc; color: #000; }
         .cancel-btn { background-color: #333; color: #fff; }
@@ -130,6 +131,10 @@
             transition: all 0.2s;
         }
         .delete-btn-modal:hover { background-color: #ff5252; color: #000; }
+        .form-error {
+            background: rgba(255, 82, 82, 0.12); border: 1px solid #ff5252; color: #ff8a80;
+            padding: 10px 12px; border-radius: 8px; font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -166,7 +171,10 @@
     <div class="modal-overlay">
         <div class="edit-card">
             <h2>Edit Task <span style="font-size: 0.6em; color: #555; vertical-align: middle;">#{{ task.id }}</span></h2>
-            <form method="POST">
+            {% if error %}
+            <div class="form-error" role="alert">{{ error }}</div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('edit_task', id=task.id) }}">
                 <input type="text" name="content" class="main-input" value="{{ task.content }}" required autocomplete="off">
                 
                 <div style="margin-bottom: 20px;">
@@ -176,13 +184,8 @@
                 <div class="form-group">
                     <label for="label">Labels</label>
                     <input name="label" id="label" class="tagify-input" 
-                        value="{% if task %}{{ task.labels|map(attribute='name')|join(',') }}{% endif %}" 
+                        value="{{ task.labels|map(attribute='name')|join(',') }}" 
                         placeholder="Add labels...">
-                    <datalist id="labels-list">
-                        {% for lbl, count in all_labels %}
-                            <option value="{{ lbl }}">
-                        {% endfor %}
-                    </datalist>
                 </div>
                 
                 <div class="metadata-row">
@@ -205,12 +208,11 @@
 				<div class="form-group" style="margin-top: 15px;">
 					<label>Dependencies (Must be done before this task):</label>
 					<select name="dependency_ids" class="small-input" multiple style="height: 110px; padding: 8px;">
-						{% for t in all_tasks %}
-							{% if t.id != task.id %}
-								<option value="{{ t.id }}" {% if t.id in dependency_ids %}selected{% endif %}>
-									#{{ t.id }} — {{ t.content[:40] }}
-								</option>
-							{% endif %}
+						{# Leaves out this task and anything that already depends on it (would make a loop) #}
+						{% for t in dependency_options %}
+							<option value="{{ t.id }}" {% if t.id in dependency_ids %}selected{% endif %}>
+								#{{ t.id }} — {{ t.content[:40] }}
+							</option>
 						{% endfor %}
 					</select>
 					<span style="font-size: 0.7rem; color: #555; display: block; margin-top: 4px; text-transform: none; letter-spacing: normal;">
@@ -226,11 +228,13 @@
                 {% endif %}
 
 			<div class="btn-group">
-				<button type="submit" formmethod="POST" formaction="/delete/{{ task.id }}" class="btn delete-btn-modal" onclick="return confirm('Are you sure you want to permanently delete this task?');">Delete</button>
-				<a href="/" class="btn cancel-btn">Cancel</a>
+				{# Belongs to delete-form below, so pressing Enter in a field still means Save #}
+				<button type="submit" form="delete-form" class="btn delete-btn-modal" onclick="return confirm('Are you sure you want to permanently delete this task?');">Delete</button>
+				<a href="{{ url_for('index') }}" class="btn cancel-btn">Cancel</a>
 				<button type="submit" class="btn save-btn">Save</button>
 			</div>
             </form>
+            <form id="delete-form" method="POST" action="{{ url_for('delete_task', id=task.id) }}"></form>
         </div>
     </div>
 <script src="{{ url_for('static', filename='js/tagify.js') }}"></script>

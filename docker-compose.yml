@@ -5,6 +5,12 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      # Inside the container the app always listens on 5000; PORT in .env only
+      # picks the host-side port below.
+      - PORT=5000
+      # Local time for due dates and completion dates (the container defaults to UTC)
+      - TZ=${TZ:-America/New_York}
     ports:
       - "${PORT:-5000}:5000"
     volumes:
