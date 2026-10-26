@@ -1,7 +1,8 @@
 /* SimpleTaskList — data layer.
  *
- * Everything the old Flask backend did, in the browser:
- *   - persistence (IndexedDB, falling back to localStorage, then memory)
+ * Everything the old Flask backend did, on the device:
+ *   - persistence (IndexedDB in the browser, Capacitor Preferences in the Android
+ *     app, which is app-private storage; the browser falls back to localStorage, then memory)
  *   - the task rules (labels, dependencies, ordering, filters, counts)
  *   - export / import of backups
  *
@@ -226,6 +227,31 @@
     };
   }
 
+  /** Android app: the whole dataset as one JSON value in Capacitor Preferences. */
+  function preferencesAdapter(state) {
+    var writes = Promise.resolve();   // one save at a time: the last one written is the newest
+    function write() {
+      var value = JSON.stringify({ tasks: Array.from(state.tasks.values()), meta: state.meta });
+      var done = writes.then(function () {
+        return Platform.callNative('Preferences', 'set', { key: LS_KEY, value: value });
+      });
+      writes = done.catch(function () { /* a failed save doesn't hold up the next one */ });
+      return done;
+    }
+    return {
+      kind: 'preferences',
+      ready: Promise.resolve(),
+      load: function () {
+        return Platform.callNative('Preferences', 'get', { key: LS_KEY }).then(function (res) {
+          var data = res.value ? JSON.parse(res.value) : { tasks: [], meta: {} };
+          return { tasks: data.tasks || [], meta: data.meta || {} };
+        });
+      },
+      save: write,
+      replace: write
+    };
+  }
+
   function memoryAdapter() {
     return {
       kind: 'memory',
@@ -302,7 +328,7 @@
 
   function init() {
     var adapter;
-    try { adapter = idbAdapter(); } catch (e) { adapter = null; }
+    try { adapter = Platform.isNative ? preferencesAdapter(state) : idbAdapter(); } catch (e) { adapter = null; }
     var p = adapter ? adapter.ready.then(function () { return adapter; }) : Promise.reject();
     return p.catch(function (err) {
       if (err) console.warn('IndexedDB unavailable, trying localStorage:', err);

@@ -304,7 +304,7 @@
   }
 
   function requestPersistence() {
-    if (!navigator.storage || !navigator.storage.persist || pref('askedPersist')) return;
+    if (Platform.isNative || !navigator.storage || !navigator.storage.persist || pref('askedPersist')) return;
     pref('askedPersist', '1');
     navigator.storage.persisted().then(function (p) { if (!p) return navigator.storage.persist(); }).catch(function () {});
   }
@@ -631,11 +631,18 @@
     var last = Store.meta().last_export;
     $('last-export').textContent = last ? 'Last backup: ' + daysAgo(last) : 'No backup yet';
     var info = $('storage-info');
-    var kind = { indexeddb: 'this device (IndexedDB)', localstorage: 'this device (localStorage)', memory: 'memory only — not saved' }[Store.kind()];
+    var kind = { preferences: 'this device (app storage)', indexeddb: 'this device (IndexedDB)', localstorage: 'this device (localStorage)', memory: 'memory only — not saved' }[Store.kind()];
     var n = Store.all().length;
     var lines = [n + ' task' + (n === 1 ? '' : 's') + ' saved on ' + kind + '.'];
     info.textContent = lines.join(' ');
     $('menu-persist').hidden = true;
+    if (Platform.isNative) {
+      // The app's own storage: browser site-data rules and persist() don't apply here.
+      lines.push('Only uninstalling the app or Clear storage in Android settings removes them.');
+      lines.push('Tasks aren’t shared between devices; use Export and Import to move them.');
+      info.textContent = lines.join(' ');
+      return;
+    }
     if (navigator.storage && navigator.storage.persisted) {
       Promise.all([navigator.storage.persisted(), navigator.storage.estimate ? navigator.storage.estimate() : null]).then(function (r) {
         var persisted = r[0], est = r[1];
@@ -674,6 +681,17 @@
     try { file = new File([data], name, { type: 'application/json' }); } catch (e) { file = null; }
     var done = function () { Store.markExported().then(function () { renderMenu(); updateMenuDot(); }); showToast('Backup saved'); };
 
+    if (Platform.isNative) {
+      // WebViews ignore download links, so the backup goes to the share sheet instead.
+      Platform.shareTextFile(data, name).then(done, function (err) {
+        if (!/cancel/i.test((err && err.message) || '')) {
+          console.warn('Share failed:', err);
+          showToast("Couldn't share the backup.");
+        }
+      });
+      return;
+    }
+
     if (coarse && file && navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({ files: [file], title: 'Tasks backup' }).then(done, function (err) {
         if (err && err.name !== 'AbortError') download(data, name, done);
@@ -691,6 +709,9 @@
     then();
   }
 
+  // Android's picker often greys out .json and .db files when they're listed in accept;
+  // the importer checks the file's contents instead.
+  if (Platform.isNative) $('import-file').removeAttribute('accept');
   $('menu-import').addEventListener('click', function () { $('import-file').click(); });
   $('import-file').addEventListener('change', function () {
     var file = this.files && this.files[0];
@@ -797,7 +818,8 @@
   // ------------------------------------------------------------ service worker (offline + updates)
 
   function setupServiceWorker() {
-    if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+    // The Android app ships its files inside the APK, so it has no use for a worker.
+    if (Platform.isNative || !('serviceWorker' in navigator) || location.protocol === 'file:') return;
     // Reload only when the user tapped "Reload" on an update. (On the very first
     // visit the worker also takes control; reloading then would wipe what's being typed.)
     var updateRequested = false;

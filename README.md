@@ -2,11 +2,11 @@
 
 A task list that runs entirely in your browser: labels, assignees, due dates,
 dependencies ("requires" / "blocks"), search, and drag-to-reorder. No server,
-no account, no build step. It works offline and installs to your phone's home
-screen.
+no account, and no build step for the web app. It works offline and installs to
+your phone's home screen. The same files also build into an Android app (see below).
 
-**Your tasks are stored on the device you use it on**, in the browser's IndexedDB.
-Nothing is uploaded anywhere.
+**Your tasks are stored on the device you use it on**: in the browser's IndexedDB,
+or in the app's own storage in the Android app. Nothing is uploaded anywhere.
 
 ## Use it
 
@@ -24,6 +24,59 @@ Offline mode and installing need HTTPS (GitHub Pages provides it) or `localhost`
 To try it locally: `python3 -m http.server` in this folder, then open
 http://localhost:8000. Opening `index.html` straight from disk also works, but
 without offline mode.
+
+## Android app
+
+The same files also build into an Android app, using [Capacitor](https://capacitorjs.com).
+GitHub Actions builds it, so Android Studio isn't needed. The app keeps its tasks in
+its own storage, which the browser's site-data settings don't touch, and it works offline.
+
+**Install a build:** in the repository, open **Actions → Android app**, pick the latest
+run, and download the `simpletasklist-android` artifact. Copy the `.apk` to the phone and
+open it. Android will ask you to allow installs from that source.
+
+Every run on `static-app` and every pull request builds an APK. The version name comes
+from `package.json`, and the version code is the run number, so each build installs over
+the last one. Without the signing secrets below, the build is an unsigned debug APK, and
+it can't update an installed copy.
+
+**Signing (needed for updates):** Android only installs an update signed with the same
+key as the installed app. Create a release key once, and keep the file and both passwords
+somewhere safe:
+
+```sh
+keytool -genkeypair -v -keystore release.jks -alias tasks -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 release.jks > release.jks.b64
+```
+
+Then add these repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | the contents of `release.jks.b64` |
+| `ANDROID_KEYSTORE_PASSWORD` | the keystore password |
+| `ANDROID_KEY_ALIAS` | the alias you used (`tasks` above) |
+| `ANDROID_KEY_PASSWORD` | the key password |
+
+If the key is lost, the next build can't update installed copies. Reinstalling would
+mean uninstalling first, and that deletes the tasks on the phone.
+
+**Moving tasks:** the app and the browser keep separate storage. Use **⋯ → Export backup**
+in one, and **Import** in the other.
+
+**Before the first install:** the `appId` in `capacitor.config.json`
+(`io.github.dafioram.simpletasklist`) is the app's permanent identity. Changing it later
+installs a second app next to the first.
+
+**Build locally (optional):**
+
+```sh
+npm ci
+npm run android:add    # copies the web files into www/ and generates android/
+```
+
+`android/` and `www/` are generated and git-ignored. Delete `android/` before running
+`android:add` again. Open `android/` in Android Studio to run the app on a device.
 
 ## Things to know
 
@@ -69,10 +122,13 @@ create a loop can't be picked.
 |---|---|
 | `index.html`, `styles.css` | The page |
 | `app.js` | Screens and interactions |
-| `store.js` | Storage (IndexedDB) and all task rules |
+| `platform.js` | Tells the browser and the Android app apart. Nothing else checks |
+| `store.js` | Storage (IndexedDB, or app storage in the Android app) and all task rules |
 | `importer.js` | Reads backups and old `tasks.db` files |
 | `sw.js` | Offline support. **Bump `VERSION` whenever you change any file** so installed copies update (they show a "Reload" prompt) |
 | `vendor/` | SortableJS (drag and drop) and sql.js (reads old `tasks.db`; only downloaded when you import one) |
+| `package.json`, `capacitor.config.json`, `scripts/` | Android build: Capacitor, copying the web files into `www/`, and launcher/splash/version setup |
+| `.github/workflows/android.yml` | Builds the Android APK on GitHub |
 
 ## Backup format
 
