@@ -38,12 +38,15 @@ for (const dir of densities) {
 }
 rmSync(join(RES, "mipmap-anydpi-v26"), { recursive: true, force: true });
 
-// 3. Splash. A plain dark screen instead of Capacitor's logo image.
+// 3. Splash. A plain dark screen instead of Capacitor's logo image. The Android 12+
+//    splash also draws the icon inside a circle; its fill defaults to white, so set
+//    it to the same dark colour as the icon's own background.
 edit(join(RES, "values/styles.xml"), [
   [
     /^([ \t]*)<item name="android:background">@drawable\/splash<\/item>$/m,
     `$1<item name="android:background">${BACKGROUND}</item>\n` +
-      `$1<item name="windowSplashScreenBackground">${BACKGROUND}</item>`
+      `$1<item name="windowSplashScreenBackground">${BACKGROUND}</item>\n` +
+      `$1<item name="windowSplashScreenIconBackgroundColor">${BACKGROUND}</item>`
   ]
 ]);
 for (const dir of readdirSync(RES).filter((d) => d.startsWith("drawable"))) {
