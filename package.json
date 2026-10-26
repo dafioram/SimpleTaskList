@@ -1,0 +1,20 @@
+{
+  "name": "simpletasklist",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A task list that runs in the browser and as an Android app.",
+  "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "android:add": "npm run build:web && cap add android && node scripts/prepare-android.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

@@ -6,7 +6,7 @@
  * Your tasks are not stored here (they're in IndexedDB) and are never touched
  * by an update.
  */
-var VERSION = 'v1.0.0';
+var VERSION = 'v1.1.0';
 var CACHE = 'simpletasklist-' + VERSION;
 var LAZY_CACHE = 'simpletasklist-lazy';   // big files fetched only when needed (database import)
 
@@ -14,6 +14,7 @@ var APP_FILES = [
   './',
   'index.html',
   'styles.css',
+  'platform.js',
   'store.js',
   'importer.js',
   'app.js',
