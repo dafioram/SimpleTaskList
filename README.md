@@ -56,7 +56,7 @@ Then add these repository secrets (Settings → Secrets and variables → Action
 | `ANDROID_KEYSTORE_BASE64` | the contents of `release.jks.b64` |
 | `ANDROID_KEYSTORE_PASSWORD` | the keystore password |
 | `ANDROID_KEY_ALIAS` | the alias you used (`tasks` above) |
-| `ANDROID_KEY_PASSWORD` | the key password |
+| `ANDROID_KEY_PASSWORD` | the same as the keystore password. The command above makes a PKCS12 keystore, which uses one password for both |
 
 If the key is lost, the next build can't update installed copies. Reinstalling would
 mean uninstalling first, and that deletes the tasks on the phone.
