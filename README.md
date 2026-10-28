@@ -35,6 +35,10 @@ its own storage, which the browser's site-data settings don't touch, and it work
 run, and download the `simpletasklist-android` artifact. Copy the `.apk` to the phone and
 open it. Android will ask you to allow installs from that source.
 
+**Releases:** publishing a GitHub release attaches the signed APK to it as
+`tasks_<tag>.apk`. To attach it to an existing release, run **Actions → Android app → Run
+workflow** and enter the release tag.
+
 Every run on `static-app` and every pull request builds an APK. The version name comes
 from `package.json`, and the version code is the run number, so each build installs over
 the last one. Without the signing secrets below, the build is an unsigned debug APK, and
