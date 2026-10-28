@@ -6,7 +6,14 @@ on:
   push:
     branches: [static-app]
   pull_request:
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing release to attach the APK to, e.g. v1.0.0 (leave empty to only build)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -60,3 +67,30 @@ jobs:
           name: simpletasklist-android
           path: android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
+
+  # Attaches the signed APK to a release as tasks_<tag>.apk. Runs for a published
+  # release, or for a manual run that names an existing release tag.
+  attach-to-release:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    needs: apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # only this job may write to releases
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: simpletasklist-android
+
+      - name: Attach tasks_<tag>.apk to the release
+        run: |
+          # Only the release-signed build goes on a release; a debug build would fail to install over it.
+          apk=$(find . -name app-release.apk -print -quit)
+          if [ -z "$apk" ]; then
+            echo "::error::No release-signed APK to attach. Set the ANDROID_* secrets, then run again."
+            exit 1
+          fi
+          cp "$apk" "tasks_${TAG}.apk"
+          gh release upload "$TAG" "tasks_${TAG}.apk" --clobber
